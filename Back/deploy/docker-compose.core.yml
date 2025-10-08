@@ -1,0 +1,125 @@
+version: '3.9'
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  env_file:
+    - .env.ec2
+  networks:
+    - jafar-private
+
+services:
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: jafar-gateway
+    ports:
+      - "${GATEWAY_HTTP_PORT:-80}:80"
+      - "${GATEWAY_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - gateway-certs:/etc/nginx/certs:ro
+    depends_on:
+      - auth-service
+      - api-service
+    networks:
+      - jafar-public
+      - jafar-private
+
+  auth-service:
+    <<: *service-defaults
+    image: ${AUTH_SERVICE_IMAGE:-registry.example.com/jafar-auth:latest}
+    container_name: jafar-auth
+    environment:
+      SERVICE_NAME: auth-service
+      SERVICE_PORT: 8080
+    ports:
+      - "${AUTH_SERVICE_PORT:-8081}:8080"
+    depends_on:
+      - redis
+      - mongo-primary
+
+  api-service:
+    <<: *service-defaults
+    image: ${API_SERVICE_IMAGE:-registry.example.com/jafar-api:latest}
+    container_name: jafar-api
+    environment:
+      SERVICE_NAME: api-service
+      SERVICE_PORT: 4000
+    ports:
+      - "${API_SERVICE_PORT:-4000}:4000"
+    depends_on:
+      - redis
+      - mongo-primary
+
+  wallet-service:
+    <<: *service-defaults
+    image: ${WALLET_SERVICE_IMAGE:-registry.example.com/jafar-wallet:latest}
+    container_name: jafar-wallet
+    environment:
+      SERVICE_NAME: wallet-service
+      SERVICE_PORT: 5000
+    depends_on:
+      - mongo-primary
+      - ledger-service
+
+  transaction-service:
+    <<: *service-defaults
+    image: ${TRANSACTION_SERVICE_IMAGE:-registry.example.com/jafar-transaction:latest}
+    container_name: jafar-transaction
+    environment:
+      SERVICE_NAME: transaction-service
+      SERVICE_PORT: 5001
+    depends_on:
+      - mongo-primary
+      - ledger-service
+
+  ledger-service:
+    <<: *service-defaults
+    image: ${LEDGER_SERVICE_IMAGE:-registry.example.com/jafar-ledger:latest}
+    container_name: jafar-ledger
+    environment:
+      SERVICE_NAME: ledger-service
+      SERVICE_PORT: 6000
+    depends_on:
+      - postgres-ledger
+
+  notification-service:
+    <<: *service-defaults
+    image: ${NOTIFICATION_SERVICE_IMAGE:-registry.example.com/jafar-notification:latest}
+    container_name: jafar-notification
+    environment:
+      SERVICE_NAME: notification-service
+      SERVICE_PORT: 7000
+    depends_on:
+      - redis
+
+  risk-service:
+    <<: *service-defaults
+    image: ${RISK_SERVICE_IMAGE:-registry.example.com/jafar-risk:latest}
+    container_name: jafar-risk
+    environment:
+      SERVICE_NAME: risk-service
+      SERVICE_PORT: 7100
+    depends_on:
+      - mongo-primary
+      - redis
+
+  monitoring-stack:
+    <<: *service-defaults
+    image: ${MONITORING_STACK_IMAGE:-registry.example.com/jafar-monitoring:latest}
+    container_name: jafar-monitoring
+    environment:
+      SERVICE_NAME: monitoring-stack
+      SERVICE_PORT: 9100
+    ports:
+      - "${MONITORING_PORT:-9090}:9090"
+    depends_on:
+      - redis
+
+networks:
+  jafar-public:
+    driver: bridge
+  jafar-private:
+    driver: bridge
+
+volumes:
+  gateway-certs:

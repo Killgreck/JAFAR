@@ -1,0 +1,76 @@
+version: '3.9'
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  env_file:
+    - .env.ec2
+  networks:
+    - jafar-private
+
+services:
+  mongo-primary:
+    <<: *service-defaults
+    image: mongo:7
+    container_name: jafar-mongo-primary
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--auth"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongo-primary-data:/data/db
+    expose:
+      - "27017"
+
+  mongo-secondary:
+    <<: *service-defaults
+    image: mongo:7
+    container_name: jafar-mongo-secondary
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--auth"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongo-secondary-data:/data/db
+    expose:
+      - "27017"
+
+  mongo-arbiter:
+    <<: *service-defaults
+    image: mongo:7
+    container_name: jafar-mongo-arbiter
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--auth"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    expose:
+      - "27017"
+
+  redis:
+    <<: *service-defaults
+    image: redis:7-alpine
+    container_name: jafar-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    expose:
+      - "6379"
+
+  postgres-ledger:
+    <<: *service-defaults
+    image: postgres:16-alpine
+    container_name: jafar-postgres-ledger
+    environment:
+      POSTGRES_USER: ${LEDGER_DB_USER}
+      POSTGRES_PASSWORD: ${LEDGER_DB_PASSWORD}
+      POSTGRES_DB: ${LEDGER_DB_NAME}
+    volumes:
+      - postgres-ledger-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+
+networks:
+  jafar-private:
+    driver: bridge
+
+volumes:
+  mongo-primary-data:
+  mongo-secondary-data:
+  postgres-ledger-data:
