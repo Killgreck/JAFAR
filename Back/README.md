@@ -129,5 +129,3 @@ Valores clave:
 - `APP_PUBLIC_PORT`: puerto publicado para el gateway o API.
 - `MONGODB_URI`: cadena de conexión; debe incluir usuario/contraseña y `authSource`.
 - `REDIS_URL`: URL de Redis con protocolo `redis://`.
-
-Usa `.env.docker` o `.env.ec2` como base y no comprometas secretos en repositorios públicos.
