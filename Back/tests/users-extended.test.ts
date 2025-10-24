@@ -143,6 +143,47 @@ describe('Users API - Extended Coverage', () => {
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
     });
+
+    it('should reject password with less than 8 characters', async () => {
+      const response = await request(app)
+        .post('/api/users')
+        .send({
+          email: 'short@test.com',
+          username: 'shortuser',
+          password: '1234567',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('at least 8 characters');
+    });
+
+    it('should accept password with exactly 8 characters', async () => {
+      const response = await request(app)
+        .post('/api/users')
+        .send({
+          email: 'valid@test.com',
+          username: 'validuser',
+          password: '12345678',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.email).toBe('valid@test.com');
+    });
+
+    it('should accept password with more than 8 characters', async () => {
+      const response = await request(app)
+        .post('/api/users')
+        .send({
+          email: 'long@test.com',
+          username: 'longuser',
+          password: 'verylongpassword123',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.email).toBe('long@test.com');
+    });
   });
 
   describe('GET /api/users - Error handling', () => {

@@ -31,7 +31,7 @@ describe('Users API', () => {
   });
 
   it('rejects duplicate user creation by email with 409', async () => {
-    const payload = { email: 'dup@example.com', username: 'dup1', password: 'hash' };
+    const payload = { email: 'dup@example.com', username: 'dup1', password: 'password123' };
     await request(app).post('/api/users').send(payload);
 
     const response = await request(app)
@@ -43,11 +43,11 @@ describe('Users API', () => {
   });
 
   it('rejects duplicate user creation by username with 409', async () => {
-    await request(app).post('/api/users').send({ email: 'user1@example.com', username: 'dupuser', password: 'hash' });
+    await request(app).post('/api/users').send({ email: 'user1@example.com', username: 'dupuser', password: 'password123' });
 
     const response = await request(app)
       .post('/api/users')
-      .send({ email: 'user2@example.com', username: 'dupuser', password: 'hash' });
+      .send({ email: 'user2@example.com', username: 'dupuser', password: 'password123' });
 
     expect(response.status).toBe(409);
     expect(response.body).toMatchObject({ message: expect.stringContaining('already exists') });
@@ -87,5 +87,15 @@ describe('Users API', () => {
     const response = await request(app).post('/api/users').send({ email: 'missing@example.com' });
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({ message: expect.any(String) });
+  });
+
+  it('rejects user creation with password shorter than 8 characters', async () => {
+    const response = await request(app).post('/api/users').send({
+      email: 'short@example.com',
+      username: 'shortpass',
+      password: '1234567',
+    });
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ message: expect.stringContaining('at least 8 characters') });
   });
 });

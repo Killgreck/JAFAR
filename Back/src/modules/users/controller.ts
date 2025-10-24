@@ -75,6 +75,11 @@ export class UsersController {
         return;
       }
 
+      if (password.length < 8) {
+        res.status(400).json({ message: 'password must be at least 8 characters long' });
+        return;
+      }
+
       const created = await createUser({
         email,
         username,
