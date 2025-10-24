@@ -42,6 +42,16 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.env.docker
+Back/.env
+Back/.env.docker
+Back/.env.local
+
+# AWS Keys
+*.pem
+*.key
+Back/*.pem
+Back/*.key
 
 # Build outputs
 dist/
