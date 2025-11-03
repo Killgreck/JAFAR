@@ -3,6 +3,11 @@ import mongoose from 'mongoose';
 import { createWallet, getWalletByUser, updateWalletBalance, WalletConflictError } from './service';
 import type { WalletDocument } from './model';
 
+/**
+ * Sanitizes a wallet document for client-side consumption.
+ * @param wallet The wallet document to sanitize.
+ * @returns A sanitized wallet object.
+ */
 function sanitizeWallet(wallet: WalletDocument) {
   return {
     id: wallet._id.toString(),
@@ -13,11 +18,25 @@ function sanitizeWallet(wallet: WalletDocument) {
   };
 }
 
+/**
+ * Checks if a value is a valid Mongoose ObjectId.
+ * @param value The value to check.
+ * @returns True if the value is a valid ObjectId, false otherwise.
+ */
 function isValidObjectId(value: unknown): value is string {
   return typeof value === 'string' && mongoose.Types.ObjectId.isValid(value);
 }
 
+/**
+ * Controller for handling wallet-related requests.
+ */
 export class WalletController {
+  /**
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns The wallet for the specified user.
+   */
   async getByUser(req: Request, res: Response, next: NextFunction) {
     try {
       const { userId } = req.params;
@@ -37,6 +56,12 @@ export class WalletController {
     }
   }
 
+  /**
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns The created wallet.
+   */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const { user, balance } = req.body;
@@ -61,6 +86,12 @@ export class WalletController {
     }
   }
 
+  /**
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns The updated wallet.
+   */
   async updateBalance(req: Request, res: Response, next: NextFunction) {
     try {
       const { userId } = req.params;

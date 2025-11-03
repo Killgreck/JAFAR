@@ -6,6 +6,11 @@ mongoose.set('strictQuery', false);
 const MAX_RETRIES = 5;
 const RETRY_DELAY_MS = 3_000;
 
+/**
+ * Connects to MongoDB with a retry mechanism.
+ * @param mongoUri The MongoDB connection string.
+ * @param attempt The current connection attempt number.
+ */
 async function connectWithRetry(mongoUri: string, attempt = 1): Promise<void> {
   try {
     await mongoose.connect(mongoUri);
@@ -22,6 +27,10 @@ async function connectWithRetry(mongoUri: string, attempt = 1): Promise<void> {
   }
 }
 
+/**
+ * Connects to the MongoDB database.
+ * @returns A promise that resolves to the Mongoose instance.
+ */
 export async function connectToDatabase(): Promise<typeof mongoose> {
   const mongoUri = process.env.MONGODB_URI ?? environment.mongodbUri;
 
@@ -42,6 +51,9 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   return mongoose;
 }
 
+/**
+ * Disconnects from the MongoDB database.
+ */
 export async function disconnectFromDatabase(): Promise<void> {
   await mongoose.disconnect();
   console.log('Disconnected from MongoDB');
