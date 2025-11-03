@@ -7,6 +7,10 @@ import { walletRouter } from './modules/wallet/routes';
 
 type ErrorWithStatus = Error & { status?: number };
 
+/**
+ * Creates and configures an Express application.
+ * @returns The configured Express application.
+ */
 export function createApp() {
   const app = express();
 

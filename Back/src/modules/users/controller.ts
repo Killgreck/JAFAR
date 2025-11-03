@@ -14,6 +14,11 @@ type SanitizedUser = {
   updatedAt?: Date;
 };
 
+/**
+ * Sanitizes a user document to remove sensitive information.
+ * @param user The user document to sanitize.
+ * @returns A sanitized user object.
+ */
 function sanitizeUser(user: UserDocument): SanitizedUser {
   return {
     id: user._id.toString(),
@@ -24,6 +29,11 @@ function sanitizeUser(user: UserDocument): SanitizedUser {
   };
 }
 
+/**
+ * Checks if an error is a MongoDB duplicate key error.
+ * @param error The error to check.
+ * @returns True if the error is a duplicate key error, false otherwise.
+ */
 function isDuplicateKeyError(error: unknown): error is MongoServerError {
   return Boolean(
     error &&
@@ -33,11 +43,25 @@ function isDuplicateKeyError(error: unknown): error is MongoServerError {
   );
 }
 
+/**
+ * Checks if a value is a valid Mongoose ObjectId.
+ * @param value The value to check.
+ * @returns True if the value is a valid ObjectId, false otherwise.
+ */
 function isValidObjectId(value: unknown): value is string {
   return typeof value === 'string' && mongoose.Types.ObjectId.isValid(value);
 }
 
+/**
+ * Controller for handling user-related requests.
+ */
 export class UsersController {
+  /**
+   * @param _req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns A list of all users.
+   */
   async list(_req: Request, res: Response, next: NextFunction) {
     try {
       const users = await listUsers();
@@ -47,6 +71,12 @@ export class UsersController {
     }
   }
 
+  /**
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns The user with the specified ID.
+   */
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
@@ -66,6 +96,12 @@ export class UsersController {
     }
   }
 
+  /**
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns The created user.
+   */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, username, password } = req.body;

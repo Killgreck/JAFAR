@@ -2,6 +2,9 @@ import { createApp } from './app';
 import { environment } from './config/environment';
 import { connectToDatabase, disconnectFromDatabase } from './config/database';
 
+/**
+ * Starts the application server.
+ */
 export async function startServer() {
   const app = createApp();
   const port = environment.port;
