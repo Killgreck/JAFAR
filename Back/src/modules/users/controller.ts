@@ -10,6 +10,7 @@ type SanitizedUser = {
   id: string;
   email: string;
   username: string;
+  balance: number;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -24,6 +25,7 @@ function sanitizeUser(user: UserDocument): SanitizedUser {
     id: user._id.toString(),
     email: user.email,
     username: user.username,
+    balance: user.balance ?? 25,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };

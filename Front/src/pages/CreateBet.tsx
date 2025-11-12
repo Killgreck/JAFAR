@@ -51,14 +51,14 @@ export function CreateBet() {
           <h2 className="text-2xl font-bold mb-6">Crear Nueva Apuesta</h2>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-200 mb-2">
                 Descripción de la Apuesta
               </label>
               <textarea
@@ -70,17 +70,17 @@ export function CreateBet() {
                 placeholder="Describe aquí los términos de la apuesta..."
                 rows={4}
               />
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 Sé claro y específico sobre los términos de la apuesta
               </p>
             </div>
 
             <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-200 mb-2">
                 Monto de la Apuesta (USD)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-gray-500">$</span>
+                <span className="absolute left-3 top-2 text-gray-400">$</span>
                 <input
                   id="amount"
                   type="number"
@@ -93,14 +93,14 @@ export function CreateBet() {
                   placeholder="0.00"
                 />
               </div>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 Cantidad que deseas apostar
               </p>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">Información Importante</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
+            <div className="bg-blue-900 border border-blue-700 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-100 mb-2">Información Importante</h3>
+              <ul className="text-sm text-blue-200 space-y-1">
                 <li>• La apuesta será visible para todos los usuarios</li>
                 <li>• Comisión del 5% sobre el monto total</li>
                 <li>• Una vez creada, otros usuarios podrán aceptarla</li>

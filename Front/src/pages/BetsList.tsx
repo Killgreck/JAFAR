@@ -31,8 +31,8 @@ export function BetsList() {
   const getStatusBadge = (status: Bet['status']) => {
     const styles = {
       open: 'bg-green-100 text-green-800 border-green-200',
-      accepted: 'bg-blue-100 text-blue-800 border-blue-200',
-      settled: 'bg-gray-100 text-gray-800 border-gray-200',
+      accepted: 'bg-blue-100 text-blue-200 border-blue-200',
+      settled: 'bg-gray-700 text-gray-100 border-gray-600',
       cancelled: 'bg-red-100 text-red-800 border-red-200',
     };
 
@@ -65,7 +65,7 @@ export function BetsList() {
     return (
       <Layout>
         <div className="text-center py-12">
-          <div className="text-xl text-gray-600">Cargando apuestas...</div>
+          <div className="text-xl text-gray-300">Cargando apuestas...</div>
         </div>
       </Layout>
     );
@@ -75,7 +75,7 @@ export function BetsList() {
     return (
       <Layout>
         <div className="card">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg">
             {error}
           </div>
           <button onClick={loadBets} className="btn-primary mt-4">
@@ -99,10 +99,10 @@ export function BetsList() {
         {bets.length === 0 ? (
           <div className="card text-center py-12">
             <div className="text-4xl mb-4">🎲</div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            <h3 className="text-xl font-semibold text-gray-200 mb-2">
               No hay apuestas disponibles
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-300 mb-6">
               Sé el primero en crear una apuesta
             </p>
             <button onClick={() => navigate('/create-bet')} className="btn-primary">
@@ -117,29 +117,29 @@ export function BetsList() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       {getStatusBadge(bet.status)}
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-400">
                         {formatDate(bet.createdAt)}
                       </span>
                     </div>
-                    <p className="text-gray-800 whitespace-pre-wrap">{bet.description}</p>
+                    <p className="text-gray-100 whitespace-pre-wrap">{bet.description}</p>
                   </div>
                 </div>
 
                 <div className="border-t pt-4 mt-4 flex justify-between items-center">
                   <div className="flex gap-6">
                     <div>
-                      <span className="text-sm text-gray-600">Monto</span>
+                      <span className="text-sm text-gray-300">Monto</span>
                       <div className="text-2xl font-bold text-green-600">
                         ${bet.amount.toFixed(2)}
                       </div>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">Creador</span>
+                      <span className="text-sm text-gray-300">Creador</span>
                       <div className="text-sm font-medium">
                         {bet.creator === user?.id ? (
-                          <span className="text-blue-600">Tú</span>
+                          <span className="text-blue-400">Tú</span>
                         ) : (
-                          <span className="text-gray-800">
+                          <span className="text-gray-100">
                             ID: {bet.creator.slice(-6)}
                           </span>
                         )}
@@ -147,12 +147,12 @@ export function BetsList() {
                     </div>
                     {bet.opponent && (
                       <div>
-                        <span className="text-sm text-gray-600">Oponente</span>
+                        <span className="text-sm text-gray-300">Oponente</span>
                         <div className="text-sm font-medium">
                           {bet.opponent === user?.id ? (
-                            <span className="text-blue-600">Tú</span>
+                            <span className="text-blue-400">Tú</span>
                           ) : (
-                            <span className="text-gray-800">
+                            <span className="text-gray-100">
                               ID: {bet.opponent.slice(-6)}
                             </span>
                           )}
