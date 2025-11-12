@@ -4,9 +4,9 @@
   "description": "jafar es una plataforma de apuestas entre pares (P2P) enfocada en ofrecer transparencia, comisiones reducidas (5%) y libertad para crear apuestas personalizadas sobre cualquier evento verificable. El objetivo MVP es alcanzar 5 000 usuarios activos mensuales y un volumen de 100 000 USD en transacciones durante los primeros 8 meses. El enfoque del desarrollo es mantener la simplicidad y asegurar que solo se construya la funcionalidad core necesaria para operar el modelo P2P sin añadir características complejas adicionales.",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "dev": "tsx watch --clear-screen=false src/index.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/index.js",
     "test": "TMPDIR=/mnt/data/tmp-test NPM_CONFIG_CACHE=/mnt/data/npm-cache vitest run",
     "test:watch": "TMPDIR=/mnt/data/tmp-test NPM_CONFIG_CACHE=/mnt/data/npm-cache vitest",
     "test:ui": "TMPDIR=/mnt/data/tmp-test NPM_CONFIG_CACHE=/mnt/data/npm-cache vitest --ui",
