@@ -29,6 +29,20 @@ router.get('/:id', controller.getById.bind(controller));
 router.post('/', controller.create.bind(controller));
 
 /**
+ * @route POST /api/users/register
+ * @description Register a new user and receive a JWT token.
+ * @access Public
+ */
+router.post('/register', controller.register.bind(controller));
+
+/**
+ * @route POST /api/users/login
+ * @description Login with email and password to receive a JWT token.
+ * @access Public
+ */
+router.post('/login', controller.login.bind(controller));
+
+/**
  * Express router for user-related API endpoints.
  */
 export const usersRouter = router;

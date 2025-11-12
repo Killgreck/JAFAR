@@ -1,12 +1,12 @@
 import mongoose, { Types } from 'mongoose';
 
 /**
- * Mongoose schema for the Bet model.
+ * Mongoose schema for the Bet model (Prediction Market).
  */
 const betSchema = new mongoose.Schema(
   {
     /**
-     * The user who created the bet.
+     * The user who created the prediction question.
      */
     creator: {
       type: Types.ObjectId,
@@ -14,27 +14,27 @@ const betSchema = new mongoose.Schema(
       required: true,
     },
     /**
-     * The user who is the opponent in the bet.
+     * The prediction question.
      */
-    opponent: {
-      type: Types.ObjectId,
-      ref: 'User',
-      required: false,
-    },
-    /**
-     * The description of the bet.
-     */
-    description: {
+    question: {
       type: String,
       required: true,
       trim: true,
     },
     /**
-     * The amount of the bet.
+     * Total amount wagered on "for" side.
      */
-    amount: {
+    totalForAmount: {
       type: Number,
-      required: true,
+      default: 0,
+      min: 0,
+    },
+    /**
+     * Total amount wagered on "against" side.
+     */
+    totalAgainstAmount: {
+      type: Number,
+      default: 0,
       min: 0,
     },
     /**
@@ -42,8 +42,23 @@ const betSchema = new mongoose.Schema(
      */
     status: {
       type: String,
-      enum: ['open', 'accepted', 'settled', 'cancelled'],
+      enum: ['open', 'settled', 'cancelled'],
       default: 'open',
+    },
+    /**
+     * The result of the bet (when settled).
+     */
+    result: {
+      type: String,
+      enum: ['for', 'against'],
+      required: false,
+    },
+    /**
+     * When the bet was settled.
+     */
+    settledAt: {
+      type: Date,
+      required: false,
     },
   },
   {

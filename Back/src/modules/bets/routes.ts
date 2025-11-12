@@ -23,7 +23,7 @@ router.get('/:id', controller.getById.bind(controller));
 
 /**
  * @route POST /api/bets
- * @description Create a new bet.
+ * @description Create a new prediction.
  * @access Public
  */
 router.post('/', controller.create.bind(controller));
