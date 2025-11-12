@@ -1,12 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    @apply bg-gray-50 text-gray-900;
-  }
-}
+@import "tailwindcss";
 
 @layer components {
   .btn-primary {
@@ -25,3 +17,8 @@
     @apply bg-white rounded-lg shadow-md p-6;
   }
 }
+
+body {
+  @apply bg-gray-50 text-gray-900;
+}
+
