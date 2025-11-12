@@ -7,9 +7,10 @@ import { betsService } from '../services/bets';
 export function CreateBet() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [creatorSide, setCreatorSide] = useState<'for' | 'against'>('for');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
@@ -34,8 +35,10 @@ export function CreateBet() {
         creator: user.id,
         description,
         amount: amountNum,
+        creatorSide,
       });
 
+      await refreshUser();
       navigate('/bets');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al crear la apuesta');
@@ -72,6 +75,37 @@ export function CreateBet() {
               />
               <p className="text-sm text-gray-400 mt-1">
                 Sé claro y específico sobre los términos de la apuesta
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-2">
+                ¿Apostar a favor o en contra?
+              </label>
+              <div className="flex gap-6">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    value="for"
+                    checked={creatorSide === 'for'}
+                    onChange={() => setCreatorSide('for')}
+                    className="mr-2 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-300">A Favor</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    value="against"
+                    checked={creatorSide === 'against'}
+                    onChange={() => setCreatorSide('against')}
+                    className="mr-2 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-300">En Contra</span>
+                </label>
+              </div>
+              <p className="text-sm text-gray-400 mt-1">
+                Selecciona tu posición en esta apuesta
               </p>
             </div>
 

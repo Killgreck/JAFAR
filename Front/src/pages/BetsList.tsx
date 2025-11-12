@@ -9,7 +9,8 @@ export function BetsList() {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { user } = useAuth();
+  const [acceptingBetId, setAcceptingBetId] = useState<string | null>(null);
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +26,25 @@ export function BetsList() {
       setError(err.response?.data?.message || 'Error al cargar las apuestas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAcceptBet = async (betId: string) => {
+    if (!user) {
+      setError('Debes iniciar sesión para aceptar una apuesta');
+      return;
+    }
+
+    try {
+      setAcceptingBetId(betId);
+      setError('');
+      await betsService.accept(betId, user.id);
+      await refreshUser();
+      await loadBets();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error al aceptar la apuesta');
+    } finally {
+      setAcceptingBetId(null);
     }
   };
 
@@ -125,46 +145,76 @@ export function BetsList() {
                   </div>
                 </div>
 
-                <div className="border-t pt-4 mt-4 flex justify-between items-center">
-                  <div className="flex gap-6">
+                <div className="border-t border-gray-700 pt-4 mt-4">
+                  <div className="flex gap-6 mb-4">
                     <div>
-                      <span className="text-sm text-gray-300">Monto</span>
-                      <div className="text-2xl font-bold text-green-600">
+                      <span className="text-sm text-gray-400">Monto</span>
+                      <div className="text-2xl font-bold text-green-400">
                         ${bet.amount.toFixed(2)}
                       </div>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-300">Creador</span>
+                      <span className="text-sm text-gray-400">Creador</span>
                       <div className="text-sm font-medium">
                         {bet.creator === user?.id ? (
                           <span className="text-blue-400">Tú</span>
                         ) : (
-                          <span className="text-gray-100">
+                          <span className="text-gray-200">
                             ID: {bet.creator.slice(-6)}
                           </span>
                         )}
                       </div>
                     </div>
-                    {bet.opponent && (
-                      <div>
-                        <span className="text-sm text-gray-300">Oponente</span>
-                        <div className="text-sm font-medium">
-                          {bet.opponent === user?.id ? (
-                            <span className="text-blue-400">Tú</span>
-                          ) : (
-                            <span className="text-gray-100">
-                              ID: {bet.opponent.slice(-6)}
-                            </span>
-                          )}
-                        </div>
+                    <div>
+                      <span className="text-sm text-gray-400">Posición del Creador</span>
+                      <div className="text-sm font-medium">
+                        <span className={bet.creatorSide === 'for' ? 'text-green-400' : 'text-red-400'}>
+                          {bet.creatorSide === 'for' ? 'A Favor ✓' : 'En Contra ✗'}
+                        </span>
                       </div>
+                    </div>
+                    {bet.opponent && (
+                      <>
+                        <div>
+                          <span className="text-sm text-gray-400">Oponente</span>
+                          <div className="text-sm font-medium">
+                            {bet.opponent === user?.id ? (
+                              <span className="text-blue-400">Tú</span>
+                            ) : (
+                              <span className="text-gray-200">
+                                ID: {bet.opponent.slice(-6)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-sm text-gray-400">Posición del Oponente</span>
+                          <div className="text-sm font-medium">
+                            <span className={bet.creatorSide === 'for' ? 'text-red-400' : 'text-green-400'}>
+                              {bet.creatorSide === 'for' ? 'En Contra ✗' : 'A Favor ✓'}
+                            </span>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
 
                   {bet.status === 'open' && bet.creator !== user?.id && (
-                    <button className="btn-primary">
-                      Aceptar Apuesta
-                    </button>
+                    <div className="bg-blue-900 border border-blue-700 rounded-lg p-3 flex justify-between items-center">
+                      <div className="text-sm">
+                        <span className="text-gray-300">Tu posición será: </span>
+                        <span className={bet.creatorSide === 'for' ? 'text-red-400 font-semibold' : 'text-green-400 font-semibold'}>
+                          {bet.creatorSide === 'for' ? 'En Contra ✗' : 'A Favor ✓'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleAcceptBet(bet.id)}
+                        disabled={acceptingBetId === bet.id}
+                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {acceptingBetId === bet.id ? 'Aceptando...' : 'Aceptar Apuesta'}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

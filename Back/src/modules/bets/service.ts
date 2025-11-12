@@ -29,6 +29,7 @@ export async function createBet(data: {
   opponent?: string;
   description: string;
   amount: number;
+  creatorSide: 'for' | 'against';
 }): Promise<BetDocument> {
   // Get the creator
   const creator = await UserModel.findById(data.creator);
@@ -49,4 +50,50 @@ export async function createBet(data: {
   // Create the bet
   const created = await BetModel.create(data);
   return created;
+}
+
+/**
+ * Accepts a bet and deducts the amount from the opponent's balance.
+ * @param betId The ID of the bet to accept.
+ * @param opponentId The ID of the user accepting the bet.
+ * @returns A promise that resolves to the updated bet document.
+ * @throws {Error} If the bet is not available or opponent doesn't have sufficient balance.
+ */
+export async function acceptBet(betId: string, opponentId: string): Promise<BetDocument> {
+  // Get the bet
+  const bet = await BetModel.findById(betId);
+  if (!bet) {
+    throw new Error('Bet not found');
+  }
+
+  if (bet.status !== 'open') {
+    throw new Error('Bet is not available');
+  }
+
+  if (bet.creator.toString() === opponentId) {
+    throw new Error('Cannot accept your own bet');
+  }
+
+  // Get the opponent
+  const opponent = await UserModel.findById(opponentId);
+  if (!opponent) {
+    throw new Error('Opponent not found');
+  }
+
+  // Check if opponent has sufficient balance
+  const currentBalance = opponent.balance ?? 0;
+  if (currentBalance < bet.amount) {
+    throw new Error('Insufficient balance');
+  }
+
+  // Deduct the amount from the opponent's balance
+  opponent.balance = currentBalance - bet.amount;
+  await opponent.save();
+
+  // Update the bet
+  bet.opponent = new BetModel.base.Types.ObjectId(opponentId);
+  bet.status = 'accepted';
+  await bet.save();
+
+  return bet;
 }

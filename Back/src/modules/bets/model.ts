@@ -38,6 +38,14 @@ const betSchema = new mongoose.Schema(
       min: 0,
     },
     /**
+     * The side the creator is betting on.
+     */
+    creatorSide: {
+      type: String,
+      enum: ['for', 'against'],
+      required: true,
+    },
+    /**
      * The status of the bet.
      */
     status: {

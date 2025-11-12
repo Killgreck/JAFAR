@@ -27,6 +27,7 @@ export interface Bet {
   opponent?: string;
   description: string;
   amount: number;
+  creatorSide: 'for' | 'against';
   status: 'open' | 'accepted' | 'settled' | 'cancelled';
   createdAt: string;
   updatedAt: string;
@@ -36,5 +37,6 @@ export interface CreateBetData {
   creator: string;
   description: string;
   amount: number;
+  creatorSide: 'for' | 'against';
   opponent?: string;
 }

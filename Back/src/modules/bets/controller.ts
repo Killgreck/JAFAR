@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { createBet, getBetById, listBets } from './service';
+import { createBet, getBetById, listBets, acceptBet } from './service';
 import type { BetDocument } from './model';
 
 /**
@@ -16,6 +16,7 @@ function sanitizeBet(bet: BetDocument) {
     opponent,
     description: bet.description,
     amount: bet.amount,
+    creatorSide: bet.creatorSide,
     status: bet.status,
     createdAt: bet.createdAt,
     updatedAt: bet.updatedAt,
@@ -83,10 +84,15 @@ export class BetsController {
    */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { creator, opponent, description, amount } = req.body;
+      const { creator, opponent, description, amount, creatorSide } = req.body;
 
       if (!isValidObjectId(creator) || !description || typeof amount !== 'number' || amount < 0) {
         res.status(400).json({ message: 'creator, description and a non-negative amount are required' });
+        return;
+      }
+
+      if (creatorSide !== 'for' && creatorSide !== 'against') {
+        res.status(400).json({ message: 'creatorSide must be either "for" or "against"' });
         return;
       }
 
@@ -100,10 +106,43 @@ export class BetsController {
         opponent,
         description,
         amount,
+        creatorSide,
       });
 
       res.status(201).json(sanitizeBet(created));
     } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns The accepted bet.
+   */
+  async accept(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { opponentId } = req.body;
+
+      if (!isValidObjectId(id)) {
+        res.status(400).json({ message: 'id must be a valid identifier' });
+        return;
+      }
+
+      if (!isValidObjectId(opponentId)) {
+        res.status(400).json({ message: 'opponentId must be a valid identifier' });
+        return;
+      }
+
+      const updated = await acceptBet(id, opponentId);
+      res.json(sanitizeBet(updated));
+    } catch (error) {
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
       next(error);
     }
   }

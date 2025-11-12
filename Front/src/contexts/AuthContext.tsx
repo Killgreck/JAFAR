@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -48,6 +49,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   };
 
+  const refreshUser = async () => {
+    if (!user) return;
+    try {
+      const updatedUser = await authService.getCurrentUser(user.id);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   const logout = async () => {
     await authService.logout();
     setUser(null);
@@ -61,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshUser,
         isAuthenticated: !!user,
       }}
     >

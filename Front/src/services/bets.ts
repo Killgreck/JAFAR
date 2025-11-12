@@ -16,4 +16,9 @@ export const betsService = {
     const response = await api.post<Bet>('/bets', data);
     return response.data;
   },
+
+  async accept(betId: string, opponentId: string): Promise<Bet> {
+    const response = await api.post<Bet>(`/bets/${betId}/accept`, { opponentId });
+    return response.data;
+  },
 };
