@@ -1,4 +1,5 @@
 import { BetModel, BetDocument } from './model';
+import { UserModel } from '../users/model';
 
 /**
  * Retrieves a list of all bets from the database.
@@ -18,16 +19,28 @@ export async function getBetById(id: string): Promise<BetDocument | null> {
 }
 
 /**
- * Creates a new bet in the database.
- * @param data The data for the new bet.
+ * Creates a new prediction question (no wager placed at creation).
+ * @param data The data for the new prediction.
  * @returns A promise that resolves to the created bet document.
  */
 export async function createBet(data: {
   creator: string;
-  opponent?: string;
-  description: string;
-  amount: number;
+  question: string;
 }): Promise<BetDocument> {
-  const created = await BetModel.create(data);
+  // Validate creator exists
+  const creator = await UserModel.findById(data.creator);
+  if (!creator) {
+    throw new Error('Creator not found');
+  }
+
+  // Create the prediction
+  const created = await BetModel.create({
+    creator: data.creator,
+    question: data.question,
+    totalForAmount: 0,
+    totalAgainstAmount: 0,
+    status: 'open',
+  });
+
   return created;
 }

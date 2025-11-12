@@ -1,10 +1,13 @@
 import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { environment } from './environment';
 
 mongoose.set('strictQuery', false);
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY_MS = 3_000;
+
+let mongoServer: MongoMemoryServer | null = null;
 
 /**
  * Connects to MongoDB with a retry mechanism.
@@ -32,7 +35,22 @@ async function connectWithRetry(mongoUri: string, attempt = 1): Promise<void> {
  * @returns A promise that resolves to the Mongoose instance.
  */
 export async function connectToDatabase(): Promise<typeof mongoose> {
-  const mongoUri = process.env.MONGODB_URI ?? environment.mongodbUri;
+  let mongoUri = process.env.MONGODB_URI ?? environment.mongodbUri;
+
+  // Use MongoMemoryServer in development if local MongoDB is not available
+  if (environment.appEnv === 'development' && mongoUri.includes('127.0.0.1')) {
+    try {
+      // Try to connect to local MongoDB first
+      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 2000 });
+      console.log('Connected to local MongoDB');
+      return mongoose;
+    } catch (error) {
+      console.log('Local MongoDB not available, starting MongoDB Memory Server...');
+      mongoServer = await MongoMemoryServer.create();
+      mongoUri = mongoServer.getUri();
+      console.log(`MongoDB Memory Server started at ${mongoUri}`);
+    }
+  }
 
   if (!mongoUri) {
     throw new Error('Environment variable MONGODB_URI is required');
@@ -56,5 +74,10 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
  */
 export async function disconnectFromDatabase(): Promise<void> {
   await mongoose.disconnect();
+  if (mongoServer) {
+    await mongoServer.stop();
+    mongoServer = null;
+    console.log('MongoDB Memory Server stopped');
+  }
   console.log('Disconnected from MongoDB');
 }

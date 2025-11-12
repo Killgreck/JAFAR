@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import type { MongoServerError } from 'mongodb';
-import { createUser, getUserById, listUsers } from './service';
+import { createUser, getUserById, listUsers, registerUser, loginUser } from './service';
 import type { UserDocument } from './model';
 
 const DUPLICATE_KEY_ERROR_CODE = 11000;
@@ -10,6 +10,7 @@ type SanitizedUser = {
   id: string;
   email: string;
   username: string;
+  balance: number;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -24,6 +25,7 @@ function sanitizeUser(user: UserDocument): SanitizedUser {
     id: user._id.toString(),
     email: user.email,
     username: user.username,
+    balance: user.balance ?? 25,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -129,6 +131,77 @@ export class UsersController {
         return;
       }
 
+      next(error);
+    }
+  }
+
+  /**
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns The registered user and JWT token.
+   */
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, username, password } = req.body;
+
+      if (!email || !username || !password) {
+        res.status(400).json({ message: 'email, username and password are required' });
+        return;
+      }
+
+      if (password.length < 8) {
+        res.status(400).json({ message: 'password must be at least 8 characters long' });
+        return;
+      }
+
+      const { user, token } = await registerUser({
+        email,
+        username,
+        password,
+      });
+
+      res.status(201).json({
+        token,
+        user: sanitizeUser(user),
+      });
+    } catch (error) {
+      if (isDuplicateKeyError(error)) {
+        res.status(409).json({ message: 'User with the provided email or username already exists' });
+        return;
+      }
+
+      next(error);
+    }
+  }
+
+  /**
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   * @returns The authenticated user and JWT token.
+   */
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        res.status(400).json({ message: 'email and password are required' });
+        return;
+      }
+
+      const result = await loginUser(email, password);
+
+      if (!result) {
+        res.status(401).json({ message: 'Invalid email or password' });
+        return;
+      }
+
+      res.json({
+        token: result.token,
+        user: sanitizeUser(result.user),
+      });
+    } catch (error) {
       next(error);
     }
   }

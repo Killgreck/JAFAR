@@ -3,6 +3,7 @@ import cors from 'cors';
 import { httpLogger } from './core/httpLogger';
 import { usersRouter } from './modules/users/routes';
 import { betsRouter } from './modules/bets/routes';
+import { wagersRouter } from './modules/wagers/routes';
 import { walletRouter } from './modules/wallet/routes';
 
 type ErrorWithStatus = Error & { status?: number };
@@ -24,6 +25,7 @@ export function createApp() {
 
   app.use('/api/users', usersRouter);
   app.use('/api/bets', betsRouter);
+  app.use('/api/wagers', wagersRouter);
   app.use('/api/wallet', walletRouter);
 
   app.use((_req, res) => {

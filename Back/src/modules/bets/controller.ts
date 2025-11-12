@@ -9,14 +9,15 @@ import type { BetDocument } from './model';
  * @returns A sanitized bet object.
  */
 function sanitizeBet(bet: BetDocument) {
-  const opponent = bet.opponent ? bet.opponent.toString() : undefined;
   return {
     id: bet._id.toString(),
     creator: bet.creator.toString(),
-    opponent,
-    description: bet.description,
-    amount: bet.amount,
+    question: bet.question,
+    totalForAmount: bet.totalForAmount,
+    totalAgainstAmount: bet.totalAgainstAmount,
     status: bet.status,
+    result: bet.result,
+    settledAt: bet.settledAt,
     createdAt: bet.createdAt,
     updatedAt: bet.updatedAt,
   };
@@ -79,31 +80,28 @@ export class BetsController {
    * @param req The request object.
    * @param res The response object.
    * @param next The next middleware function.
-   * @returns The created bet.
+   * @returns The created prediction.
    */
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { creator, opponent, description, amount } = req.body;
+      const { creator, question } = req.body;
 
-      if (!isValidObjectId(creator) || !description || typeof amount !== 'number' || amount < 0) {
-        res.status(400).json({ message: 'creator, description and a non-negative amount are required' });
-        return;
-      }
-
-      if (opponent !== undefined && opponent !== null && !isValidObjectId(opponent)) {
-        res.status(400).json({ message: 'opponent must be a valid user id when provided' });
+      if (!isValidObjectId(creator) || !question || typeof question !== 'string') {
+        res.status(400).json({ message: 'creator and question are required' });
         return;
       }
 
       const created = await createBet({
         creator,
-        opponent,
-        description,
-        amount,
+        question,
       });
 
       res.status(201).json(sanitizeBet(created));
     } catch (error) {
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
       next(error);
     }
   }
