@@ -23,17 +23,10 @@ router.get('/:id', controller.getById.bind(controller));
 
 /**
  * @route POST /api/bets
- * @description Create a new bet.
+ * @description Create a new prediction.
  * @access Public
  */
 router.post('/', controller.create.bind(controller));
-
-/**
- * @route POST /api/bets/:id/accept
- * @description Accept a bet.
- * @access Public
- */
-router.post('/:id/accept', controller.accept.bind(controller));
 
 /**
  * Express router for bet-related API endpoints.

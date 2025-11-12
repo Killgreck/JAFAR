@@ -24,19 +24,35 @@ export interface RegisterData {
 export interface Bet {
   id: string;
   creator: string;
-  opponent?: string;
-  description: string;
-  amount: number;
-  creatorSide: 'for' | 'against';
-  status: 'open' | 'accepted' | 'settled' | 'cancelled';
+  question: string;
+  totalForAmount: number;
+  totalAgainstAmount: number;
+  status: 'open' | 'settled' | 'cancelled';
+  result?: 'for' | 'against';
+  settledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateBetData {
   creator: string;
-  description: string;
+  question: string;
+}
+
+export interface Wager {
+  id: string;
+  bet: string;
+  user: string;
+  side: 'for' | 'against';
   amount: number;
-  creatorSide: 'for' | 'against';
-  opponent?: string;
+  odds: number;
+  payout?: number;
+  createdAt: string;
+}
+
+export interface PlaceWagerData {
+  betId: string;
+  userId: string;
+  side: 'for' | 'against';
+  amount: number;
 }
