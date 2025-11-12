@@ -23,11 +23,18 @@ export interface RegisterData {
 
 export interface Bet {
   id: string;
-  title: string;
+  creator: string;
+  opponent?: string;
   description: string;
   amount: number;
-  odds: number;
-  createdBy: string;
-  status: 'pending' | 'matched' | 'resolved';
+  status: 'open' | 'accepted' | 'settled' | 'cancelled';
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBetData {
+  creator: string;
+  description: string;
+  amount: number;
+  opponent?: string;
 }

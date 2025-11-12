@@ -5,6 +5,8 @@ import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
+import { CreateBet } from './pages/CreateBet';
+import { BetsList } from './pages/BetsList';
 
 function App() {
   return (
@@ -19,6 +21,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-bet"
+            element={
+              <ProtectedRoute>
+                <CreateBet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bets"
+            element={
+              <ProtectedRoute>
+                <BetsList />
               </ProtectedRoute>
             }
           />
