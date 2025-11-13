@@ -56,3 +56,32 @@ export interface PlaceWagerData {
   side: 'for' | 'against';
   amount: number;
 }
+
+export type EventCategory = 'Deportes' | 'Política' | 'Entretenimiento' | 'Economía' | 'Otros';
+
+export type EventStatus = 'open' | 'closed' | 'resolved' | 'cancelled';
+
+export interface Event {
+  id: string;
+  creator: string;
+  title: string;
+  description: string;
+  category: EventCategory;
+  bettingDeadline: string;
+  expectedResolutionDate: string;
+  resultOptions: string[];
+  status: EventStatus;
+  winningOption?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEventData {
+  title: string;
+  description: string;
+  category: EventCategory;
+  bettingDeadline: Date;
+  expectedResolutionDate: Date;
+  resultOptions: string[];
+}

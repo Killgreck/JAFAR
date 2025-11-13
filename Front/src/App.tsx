@@ -7,6 +7,7 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { CreateBet } from './pages/CreateBet';
 import { BetsList } from './pages/BetsList';
+import { CreateEvent } from './pages/CreateEvent';
 
 function App() {
   return (
@@ -37,6 +38,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <BetsList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-event"
+            element={
+              <ProtectedRoute>
+                <CreateEvent />
               </ProtectedRoute>
             }
           />
