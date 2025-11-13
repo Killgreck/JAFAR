@@ -46,6 +46,33 @@ const userSchema = new mongoose.Schema(
 );
 
 /**
+ * Post-save hook to automatically create a wallet for new users.
+ * This ensures that every user has a wallet with zero balance upon registration.
+ * Note: We check if a wallet already exists to handle cases where the hook runs multiple times.
+ */
+userSchema.post('save', async function(doc) {
+  try {
+    // Dynamically import WalletModel to avoid circular dependency issues
+    const { WalletModel } = await import('../wallet/model');
+
+    // Check if wallet already exists (safety check)
+    const existingWallet = await WalletModel.findOne({ user: doc._id }).exec();
+    if (!existingWallet) {
+      await WalletModel.create({
+        user: doc._id,
+        balanceAvailable: 0,
+        balanceBlocked: 0,
+        lastUpdated: new Date(),
+        balance: 0, // Keep for backwards compatibility
+      });
+    }
+  } catch (error) {
+    // Log error but don't fail user creation
+    console.error('Failed to create wallet for user:', doc._id, error);
+  }
+});
+
+/**
  * Represents a user in the database.
  */
 export type User = mongoose.InferSchemaType<typeof userSchema>;

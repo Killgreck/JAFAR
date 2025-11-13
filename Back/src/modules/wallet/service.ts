@@ -33,15 +33,23 @@ export async function getWalletByUser(userId: string): Promise<WalletDocument | 
 export async function createWallet(data: {
   user: string;
   balance?: number;
+  balanceAvailable?: number;
+  balanceBlocked?: number;
 }): Promise<WalletDocument> {
   const existing = await WalletModel.findOne({ user: data.user }).exec();
   if (existing) {
     throw new WalletConflictError('Wallet already exists for this user');
   }
 
+  // Support both old 'balance' field and new 'balanceAvailable' field for backwards compatibility
+  const availableBalance = data.balanceAvailable ?? data.balance ?? 0;
+
   const created = await WalletModel.create({
     user: data.user,
-    balance: data.balance ?? 0,
+    balanceAvailable: availableBalance,
+    balanceBlocked: data.balanceBlocked ?? 0,
+    lastUpdated: new Date(),
+    balance: availableBalance, // Keep for backwards compatibility
   });
 
   return created;
@@ -56,7 +64,13 @@ export async function createWallet(data: {
 export async function updateWalletBalance(userId: string, amount: number): Promise<WalletDocument | null> {
   const wallet = await WalletModel.findOneAndUpdate(
     { user: userId },
-    { $set: { balance: amount } },
+    {
+      $set: {
+        balanceAvailable: amount,
+        balance: amount, // Keep for backwards compatibility
+        lastUpdated: new Date(),
+      }
+    },
     { new: true },
   ).exec();
 

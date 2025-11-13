@@ -12,7 +12,10 @@ function sanitizeWallet(wallet: WalletDocument) {
   return {
     id: wallet._id.toString(),
     user: wallet.user.toString(),
-    balance: wallet.balance,
+    balanceAvailable: wallet.balanceAvailable,
+    balanceBlocked: wallet.balanceBlocked,
+    lastUpdated: wallet.lastUpdated,
+    balance: wallet.balance, // Keep for backwards compatibility
     createdAt: wallet.createdAt,
     updatedAt: wallet.updatedAt,
   };

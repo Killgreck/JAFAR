@@ -15,11 +15,38 @@ const walletSchema = new mongoose.Schema(
       unique: true,
     },
     /**
-     * The balance of the wallet.
+     * The available balance (funds that can be used for new bets or withdrawals).
+     */
+    balanceAvailable: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    /**
+     * The blocked balance (funds locked in active bets).
+     */
+    balanceBlocked: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    /**
+     * Timestamp of the last transaction/update to the wallet.
+     */
+    lastUpdated: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    /**
+     * @deprecated Use balanceAvailable instead. Kept for backwards compatibility.
+     * This field represents the total available balance.
      */
     balance: {
       type: Number,
-      required: true,
+      required: false,
       min: 0,
       default: 0,
     },

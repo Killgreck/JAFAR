@@ -9,31 +9,74 @@ import { WalletModel } from '../src/modules/wallet/model';
 const app = createApp();
 
 describe('Wallet API', () => {
+  it('automatically creates a wallet when a user is registered', async () => {
+    const user = await UserModel.create({
+      email: 'auto-wallet@example.com',
+      username: 'auto-wallet-user',
+      passwordHash: 'hash'
+    });
+
+    // Wait a bit for the post-save hook to execute
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    // Verify wallet was created automatically
+    const wallet = await WalletModel.findOne({ user: user._id }).lean();
+    expect(wallet).toBeTruthy();
+    expect(wallet?.balanceAvailable).toBe(0);
+    expect(wallet?.balanceBlocked).toBe(0);
+    expect(wallet?.balance).toBe(0);
+    expect(wallet?.lastUpdated).toBeTruthy();
+
+    // Verify wallet can be retrieved via API
+    const response = await request(app).get(`/api/wallet/${user._id.toString()}`);
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      user: user._id.toString(),
+      balanceAvailable: 0,
+      balanceBlocked: 0,
+      balance: 0
+    });
+  });
+
   it('creates a wallet for a user and prevents duplicates', async () => {
     const user = await UserModel.create({ email: 'wallet@example.com', username: 'wallet-user', passwordHash: 'hash' });
 
+    // Wait a bit for the post-save hook to create the wallet automatically
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    // The wallet was already created by the hook, so trying to create another should fail
     const response = await request(app).post('/api/wallet').send({ user: user._id.toString(), balance: 100 });
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({ user: user._id.toString(), balance: 100 });
-    expect(response.body).toHaveProperty('id');
-    expect(response.body).not.toHaveProperty('_id');
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({ message: expect.stringContaining('already exists') });
 
-    const second = await request(app).post('/api/wallet').send({ user: user._id.toString(), balance: 200 });
-    expect(second.status).toBe(409);
-    expect(second.body).toMatchObject({ message: expect.stringContaining('already exists') });
-
+    // Verify the auto-created wallet still has initial values
     const stored = await WalletModel.findOne({ user: user._id }).lean();
     expect(stored).toBeTruthy();
-    expect(stored?.balance).toBe(100);
+    expect(stored?.balanceAvailable).toBe(0);
+    expect(stored?.balanceBlocked).toBe(0);
   });
 
   it('retrieves wallet by user id or returns 404', async () => {
     const user = await UserModel.create({ email: 'wallet2@example.com', username: 'wallet-user-2', passwordHash: 'hash' });
-    await WalletModel.create({ user: user._id, balance: 50 });
+
+    // Wait for auto-created wallet and update it
+    await new Promise(resolve => setTimeout(resolve, 150));
+    await WalletModel.findOneAndUpdate(
+      { user: user._id },
+      { balanceAvailable: 50, balance: 50 },
+      { upsert: true }
+    );
 
     const response = await request(app).get(`/api/wallet/${user._id.toString()}`);
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({ user: user._id.toString(), balance: 50, id: expect.any(String) });
+    expect(response.body).toMatchObject({
+      user: user._id.toString(),
+      balance: 50,
+      balanceAvailable: 50,
+      balanceBlocked: 0,
+      id: expect.any(String)
+    });
+    expect(response.body).toHaveProperty('lastUpdated');
     expect(response.body).not.toHaveProperty('_id');
 
     const missing = await request(app).get(`/api/wallet/${new mongoose.Types.ObjectId().toString()}`);
@@ -42,17 +85,27 @@ describe('Wallet API', () => {
 
   it('updates wallet balance', async () => {
     const user = await UserModel.create({ email: 'wallet3@example.com', username: 'wallet-user-3', passwordHash: 'hash' });
-    await WalletModel.create({ user: user._id, balance: 35 });
+
+    // Wait for auto-created wallet and update it
+    await new Promise(resolve => setTimeout(resolve, 150));
+    await WalletModel.findOneAndUpdate(
+      { user: user._id },
+      { balanceAvailable: 35, balance: 35 },
+      { upsert: true }
+    );
 
     const response = await request(app)
       .put(`/api/wallet/${user._id.toString()}/balance`)
       .send({ balance: 80 });
     expect(response.status).toBe(200);
     expect(response.body.balance).toBe(80);
+    expect(response.body.balanceAvailable).toBe(80);
+    expect(response.body).toHaveProperty('lastUpdated');
     expect(response.body).not.toHaveProperty('_id');
 
     const stored = await WalletModel.findOne({ user: user._id }).lean();
     expect(stored?.balance).toBe(80);
+    expect(stored?.balanceAvailable).toBe(80);
   });
 
   it('returns 404 when updating a non-existing wallet', async () => {
