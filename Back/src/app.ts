@@ -5,6 +5,7 @@ import { usersRouter } from './modules/users/routes';
 import { betsRouter } from './modules/bets/routes';
 import { wagersRouter } from './modules/wagers/routes';
 import { walletRouter } from './modules/wallet/routes';
+import { eventsRouter } from './modules/events/routes';
 
 type ErrorWithStatus = Error & { status?: number };
 
@@ -27,6 +28,7 @@ export function createApp() {
   app.use('/api/bets', betsRouter);
   app.use('/api/wagers', wagersRouter);
   app.use('/api/wallet', walletRouter);
+  app.use('/api/events', eventsRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ message: 'Not Found' });
