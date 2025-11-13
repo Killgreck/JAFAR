@@ -127,12 +127,18 @@ export function Dashboard() {
 
         <div className="card">
           <h3 className="text-xl font-bold mb-4 text-gray-100">Acciones Rápidas</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button
               onClick={() => navigate('/create-bet')}
               className="btn-primary py-4"
             >
               Crear Nueva Predicción
+            </button>
+            <button
+              onClick={() => navigate('/create-event')}
+              className="btn-primary py-4"
+            >
+              Crear Nuevo Evento
             </button>
             <button
               onClick={() => navigate('/bets')}
