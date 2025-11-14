@@ -188,17 +188,30 @@ export class UsersController {
         return;
       }
 
-      const result = await loginUser(email, password);
+      try {
+        const result = await loginUser(email, password);
 
-      if (!result) {
-        res.status(401).json({ message: 'Invalid email or password' });
-        return;
+        if (!result) {
+          res.status(401).json({ message: 'Invalid email or password' });
+          return;
+        }
+
+        res.json({
+          token: result.token,
+          user: sanitizeUser(result.user),
+        });
+      } catch (loginError: any) {
+        // Check if it's an account lock error
+        if (loginError.message && loginError.message.includes('locked')) {
+          res.status(429).json({
+            message: loginError.message,
+            error: 'ACCOUNT_LOCKED'
+          });
+          return;
+        }
+        // Re-throw other errors
+        throw loginError;
       }
-
-      res.json({
-        token: result.token,
-        user: sanitizeUser(result.user),
-      });
     } catch (error) {
       next(error);
     }

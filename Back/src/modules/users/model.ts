@@ -117,6 +117,24 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    /**
+     * Number of failed login attempts since last successful login.
+     * Used for rate limiting to prevent brute force attacks.
+     */
+    loginAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+      required: true,
+    },
+    /**
+     * Timestamp until which the account is locked due to failed login attempts.
+     * Account will be locked for 15 minutes after 5 failed attempts.
+     */
+    lockUntil: {
+      type: Date,
+      required: false,
+    },
   },
   {
     timestamps: true,
