@@ -10,6 +10,7 @@ import { BetsList } from './pages/BetsList';
 import { CreateEvent } from './pages/CreateEvent';
 import { EventsList } from './pages/EventsList';
 import { EventEvidence } from './pages/EventEvidence';
+import { EventManagement } from './pages/EventManagement';
 
 function App() {
   return (
@@ -64,6 +65,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EventEvidence />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/:eventId/manage"
+            element={
+              <ProtectedRoute>
+                <EventManagement />
               </ProtectedRoute>
             }
           />

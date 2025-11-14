@@ -221,7 +221,7 @@ export function EventsList() {
 
                   {event.creator === user?.id && event.status === 'open' && (
                     <button
-                      onClick={() => {/* TODO: Navigate to event detail/management page */}}
+                      onClick={() => navigate(`/events/${event.id}/manage`)}
                       className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg font-medium transition-colors"
                     >
                       Administrar
