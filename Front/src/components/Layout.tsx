@@ -47,15 +47,44 @@ export function Layout({ children }: LayoutProps) {
                   >
                     Eventos
                   </button>
+                  {user.role === 'admin' && (
+                    <>
+                      <button
+                        onClick={() => navigate('/admin/users')}
+                        className="text-red-400 hover:text-red-300 transition-colors font-medium"
+                      >
+                        Admin: Usuarios
+                      </button>
+                      <button
+                        onClick={() => navigate('/admin/events')}
+                        className="text-red-400 hover:text-red-300 transition-colors font-medium"
+                      >
+                        Admin: Eventos
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
 
             {user && (
               <div className="flex items-center space-x-4">
-                <span className="text-gray-300">
+                <div className="text-gray-300">
                   Hola, <span className="font-medium text-white">{user.username}</span>
-                </span>
+                  {user.role && (
+                    <span
+                      className={`ml-2 px-2 py-1 text-xs rounded ${
+                        user.role === 'admin'
+                          ? 'bg-red-900 text-red-200'
+                          : user.role === 'curator'
+                          ? 'bg-purple-900 text-purple-200'
+                          : 'bg-blue-900 text-blue-200'
+                      }`}
+                    >
+                      {user.role === 'admin' ? 'Admin' : user.role === 'curator' ? 'Curador' : 'Usuario'}
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={handleLogout}
                   className="btn-secondary"

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -10,6 +11,8 @@ import { BetsList } from './pages/BetsList';
 import { CreateEvent } from './pages/CreateEvent';
 import { EventsList } from './pages/EventsList';
 import { EventEvidence } from './pages/EventEvidence';
+import { AdminUsers } from './pages/AdminUsers';
+import { AdminEvents } from './pages/AdminEvents';
 
 function App() {
   return (
@@ -65,6 +68,22 @@ function App() {
               <ProtectedRoute>
                 <EventEvidence />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/events"
+            element={
+              <AdminRoute>
+                <AdminEvents />
+              </AdminRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
