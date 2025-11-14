@@ -22,7 +22,7 @@ describe('Users API - Extended Coverage', () => {
   describe('POST /api/users - Error handling', () => {
     it('should reject user without email', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           username: 'testuser',
           password: 'password123',
@@ -34,7 +34,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should reject user without username', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'test@example.com',
           password: 'password123',
@@ -46,7 +46,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should reject user without password', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'test@example.com',
           username: 'testuser',
@@ -58,7 +58,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should reject user with empty email', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: '',
           username: 'testuser',
@@ -70,7 +70,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should reject user with empty username', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'test@example.com',
           username: '',
@@ -82,7 +82,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should reject user with empty password', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'test@example.com',
           username: 'testuser',
@@ -100,7 +100,7 @@ describe('Users API - Extended Coverage', () => {
       });
 
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'duplicate@test.com',
           username: 'user2',
@@ -119,7 +119,7 @@ describe('Users API - Extended Coverage', () => {
       });
 
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'user2@test.com',
           username: 'duplicateuser',
@@ -132,7 +132,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should not expose password in response', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'secure@test.com',
           username: 'secureuser',
@@ -146,7 +146,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should reject password with less than 8 characters', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'short@test.com',
           username: 'shortuser',
@@ -159,7 +159,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should accept password with exactly 8 characters', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'valid@test.com',
           username: 'validuser',
@@ -173,7 +173,7 @@ describe('Users API - Extended Coverage', () => {
 
     it('should accept password with more than 8 characters', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/users/register')
         .send({
           email: 'long@test.com',
           username: 'longuser',
