@@ -109,6 +109,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    /**
+     * User's avatar URL or identifier.
+     */
+    avatar: {
+      type: String,
+      required: false,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -12,6 +12,9 @@ export interface User {
   isBanned?: boolean;
   bannedAt?: string;
   banReason?: string;
+  avatar?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -160,4 +163,22 @@ export interface BannedUser extends User {
     username: string;
     email: string;
   };
+}
+
+export interface UserStatistics {
+  totalBets: number;
+  wonBets: number;
+  lostBets: number;
+  activeBets: number;
+  successRate: number;
+}
+
+export interface UserProfile {
+  profile: User;
+  statistics: UserStatistics;
+}
+
+export interface UpdateProfileData {
+  username?: string;
+  avatar?: string;
 }
