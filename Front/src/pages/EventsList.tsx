@@ -9,59 +9,42 @@ import type { Event, EventCategory, EventStatus, PaginationMeta } from '../types
 
 export function EventsList() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    total: 0,
-    page: 1,
-    totalPages: 1,
-    hasMore: false,
-    limit: 20,
-  });
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   // Search and filter states
-  const [searchText, setSearchText] = useState('');
-  const [searchInput, setSearchInput] = useState(''); // For debouncing
+  const [searchInput, setSearchInput] = useState('');
   const [filterCategory, setFilterCategory] = useState<EventCategory | ''>('');
   const [filterStatus, setFilterStatus] = useState<EventStatus | ''>('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'closingSoon' | 'mostBetted'>('recent');
-
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
 
   const { user } = useAuth();
   const navigate = useNavigate();
 
   // Debounce search input
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearchText(searchInput);
-      setCurrentPage(1); // Reset to first page on new search
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchInput]);
+  const debouncedSearch = useDebounce(searchInput, 500);
 
   // Load events when filters change
   useEffect(() => {
-    loadEvents();
-  }, [searchText, filterCategory, filterStatus, dateFrom, dateTo, sortBy, currentPage]);
+    setCurrentPage(1); // Reset to first page on filter change
+  }, [debouncedSearch, filterCategory, filterStatus, dateFrom, dateTo, sortBy]);
 
-  // Load events when page changes
+  // Load events when page or filters change
   useEffect(() => {
-    loadEvents(currentPage);
-  }, [currentPage]);
+    loadEvents();
+  }, [currentPage, debouncedSearch, filterCategory, filterStatus, dateFrom, dateTo, sortBy]);
 
-  const loadEvents = async (page: number = 1) => {
+  const loadEvents = async () => {
     try {
       setLoading(true);
       setError('');
 
       const params: any = {
-        page,
+        page: currentPage,
         limit: 20,
       };
 
@@ -75,19 +58,6 @@ export function EventsList() {
       const response = await eventsService.listPaginated(params);
       setEvents(response.events);
       setPagination(response.pagination);
-      const result = await eventsService.search({
-        q: searchText || undefined,
-        category: filterCategory || undefined,
-        status: filterStatus || undefined,
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
-        sortBy,
-        page: currentPage,
-        limit: 20,
-      });
-
-      setEvents(result.events);
-      setPagination(result.pagination);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al cargar eventos');
       setEvents([]);
@@ -97,11 +67,8 @@ export function EventsList() {
     }
   };
 
-  const handleClearFilters = () => {
-    setSearchInput('');
   const clearFilters = () => {
     setSearchInput('');
-    setSearchText('');
     setFilterCategory('');
     setFilterStatus('');
     setDateFrom('');
@@ -204,21 +171,7 @@ export function EventsList() {
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="card">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Buscar Eventos
-          </label>
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Buscar por título o descripción..."
-            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Filters */}
+        {/* Search and Filters */}
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-100 mb-4">Filtros y Búsqueda</h2>
 
@@ -236,8 +189,6 @@ export function EventsList() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            {/* Category filter */}
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-100">Filtros</h3>
             <button
@@ -255,10 +206,7 @@ export function EventsList() {
               </label>
               <select
                 value={filterCategory}
-                onChange={(e) => {
-                  setFilterCategory(e.target.value as EventCategory | '');
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setFilterCategory(e.target.value as EventCategory | '')}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todas las categorías</option>
@@ -270,17 +218,13 @@ export function EventsList() {
               </select>
             </div>
 
-            {/* Status filter */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Estado
               </label>
               <select
                 value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value as EventStatus | '');
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setFilterStatus(e.target.value as EventStatus | '')}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todos los estados</option>
@@ -291,7 +235,6 @@ export function EventsList() {
               </select>
             </div>
 
-            {/* Sort by */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Ordenar por
@@ -306,13 +249,24 @@ export function EventsList() {
                 <option value="mostBetted">Más apostados</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Resultados
+              </label>
+              <div className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                <div className="text-2xl font-bold text-blue-400">
+                  {loading ? '...' : pagination?.total || 0}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Date range filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                📅 Fecha desde (cierre de apuestas)
+                📅 Fecha Desde (cierre de apuestas)
               </label>
               <input
                 type="date"
@@ -323,7 +277,7 @@ export function EventsList() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                📅 Fecha hasta (cierre de apuestas)
+                📅 Fecha Hasta (cierre de apuestas)
               </label>
               <input
                 type="date"
@@ -331,73 +285,8 @@ export function EventsList() {
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Fecha Desde
-              </label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => {
-                  setDateFrom(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Fecha Hasta
-              </label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => {
-                  setDateTo(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Ordenar Por
-              </label>
-              <select
-                value={sortBy}
-                onChange={(e) => {
-                  setSortBy(e.target.value as 'recent' | 'closing_soon' | 'most_bets');
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="recent">Más Recientes</option>
-                <option value="closing_soon">Próximos a Cerrar</option>
-                <option value="most_bets">Más Apostados</option>
-              </select>
-            </div>
-
-            <div className="flex items-end">
-              <div className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg">
-                <div className="text-sm text-gray-400">Resultados Encontrados</div>
-                <div className="text-2xl font-bold text-blue-400">
-                  {loading ? '...' : pagination.total}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Clear filters button */}
-          <button
-            onClick={handleClearFilters}
-            className="w-full md:w-auto px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg font-medium transition-colors"
-          >
-            🗑️ Limpiar filtros
-          </button>
         </div>
 
         {/* Results counter */}
@@ -422,10 +311,6 @@ export function EventsList() {
             {(debouncedSearch || filterCategory || filterStatus || dateFrom || dateTo)
               ? ' con los filtros seleccionados.'
               : '.'}
-          </div>
-        ) : (
-          <>
-            No se encontraron eventos con los filtros seleccionados.
           </div>
         ) : (
           <>
@@ -460,7 +345,6 @@ export function EventsList() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <div className="text-sm text-gray-400">Cierre de Apuestas</div>
                       <div className="text-gray-200 font-medium">
@@ -549,131 +433,6 @@ export function EventsList() {
                 hasPrev={pagination.hasPrev}
                 onPageChange={handlePageChange}
               />
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-400">Resolución Esperada</div>
-                      <div className="text-gray-200 font-medium">
-                        {formatDate(event.expectedResolutionDate)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-400 mb-2">Opciones de Resultado</div>
-                    <div className="flex flex-wrap gap-2">
-                      {event.resultOptions.map((option, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-gray-800 text-gray-300 text-sm rounded border border-gray-700"
-                        >
-                          {option}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {event.curatorCommission !== undefined && event.curatorCommission > 0 && (
-                    <div className="mb-4 p-3 bg-blue-900 border border-blue-700 rounded-lg">
-                      <div className="text-sm text-blue-200">
-                        Comisión del Curador: <span className="font-bold">${event.curatorCommission.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {event.resolutionRationale && (
-                    <div className="mb-4 p-3 bg-gray-800 border border-gray-700 rounded-lg">
-                      <div className="text-sm text-gray-400 mb-1">Justificación de Resolución</div>
-                      <div className="text-gray-200">{event.resolutionRationale}</div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => navigate(`/events/${event.id}/evidence`)}
-                      className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                        isEvidencePhaseActive(event)
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                      }`}
-                    >
-                      {isEvidencePhaseActive(event) ? '📊 Ver/Subir Evidencia' : '📋 Ver Evidencias'}
-                    </button>
-
-                    {event.creator === user?.id && event.status === 'open' && (
-                      <button
-                        onClick={() => {/* TODO: Navigate to event detail/management page */}}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg font-medium transition-colors"
-                      >
-                        Administrar
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="mt-3 pt-3 border-t border-gray-700 text-xs text-gray-500">
-                    Creado el {formatDate(event.createdAt)}
-                    {event.resolvedAt && ` • Resuelto el ${formatDate(event.resolvedAt)}`}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="card">
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-400">
-                    Página {pagination.page} de {pagination.totalPages} • {pagination.total} resultados totales
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Anterior
-                    </button>
-
-                    {/* Page numbers */}
-                    <div className="flex gap-1">
-                      {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (pagination.totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= pagination.totalPages - 2) {
-                          pageNum = pagination.totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                              currentPage === pageNum
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <button
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={!pagination.hasMore}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                </div>
-              </div>
             )}
           </>
         )}
