@@ -50,6 +50,11 @@ export interface ListEventsParams {
   dateFrom?: string;
   dateTo?: string;
   sortBy?: SortOption;
+  page?: number;
+  limit?: number;
+}
+
+/**
  * Interface for searching and filtering events with pagination.
  */
 export interface SearchEventsOptions {
@@ -81,6 +86,9 @@ export interface PaginationMeta {
 export interface PaginatedEventsResponse {
   events: any[];
   pagination: PaginationMeta;
+}
+
+/**
  * Interface for search results with pagination info.
  */
 export interface SearchEventsResult {
@@ -302,6 +310,10 @@ export async function listEventsPaginated(params: ListEventsParams = {}): Promis
       hasNext,
       hasPrev,
     },
+  };
+}
+
+/**
  * Searches and filters events with pagination and sorting.
  *
  * @param options Search and filter options
