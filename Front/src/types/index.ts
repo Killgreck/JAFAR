@@ -61,6 +61,8 @@ export type EventCategory = 'Deportes' | 'Política' | 'Entretenimiento' | 'Econ
 
 export type EventStatus = 'open' | 'closed' | 'resolved' | 'cancelled';
 
+export type EvidencePhase = 'none' | 'creator' | 'public';
+
 export interface Event {
   id: string;
   creator: string;
@@ -68,11 +70,17 @@ export interface Event {
   description: string;
   category: EventCategory;
   bettingDeadline: string;
+  evidenceDeadline?: string;
+  evidenceSubmissionPhase?: EvidencePhase;
   expectedResolutionDate: string;
   resultOptions: string[];
   status: EventStatus;
   winningOption?: string;
   resolvedAt?: string;
+  resolvedBy?: string;
+  resolutionRationale?: string;
+  evidenceUsed?: string;
+  curatorCommission?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,4 +92,39 @@ export interface CreateEventData {
   bettingDeadline: Date;
   expectedResolutionDate: Date;
   resultOptions: string[];
+}
+
+export type EvidenceType = 'link' | 'image' | 'document' | 'video' | 'text';
+
+export type SubmitterRole = 'creator' | 'public' | 'curator';
+
+export interface Evidence {
+  id: string;
+  event: string;
+  submittedBy: {
+    id: string;
+    username: string;
+    email: string;
+  };
+  submitterRole: SubmitterRole;
+  evidenceType: EvidenceType;
+  evidenceUrl?: string;
+  content?: string;
+  description: string;
+  supportedOption: string;
+  createdAt: string;
+}
+
+export interface CreateEvidenceData {
+  evidenceType: EvidenceType;
+  evidenceUrl?: string;
+  content?: string;
+  description: string;
+  supportedOption: string;
+}
+
+export interface ResolveEventData {
+  winningOption: string;
+  evidenceId?: string;
+  rationale?: string;
 }
