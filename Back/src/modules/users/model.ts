@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
   {
     /**
      * The user's email address.
+     * Validated with regex to ensure proper email format.
      */
     email: {
       type: String,
@@ -14,6 +15,13 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      validate: {
+        validator: function(v: string) {
+          // RFC 5322 simplified regex for email validation
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        },
+        message: (props: any) => `${props.value} is not a valid email address`
+      }
     },
     /**
      * The user's username.

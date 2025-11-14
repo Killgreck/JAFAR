@@ -46,6 +46,7 @@ export async function createUser(data: {
 
 /**
  * Registers a new user with hashed password.
+ * Uses bcrypt with cost factor 12 for secure password hashing.
  * @param data The registration data.
  * @returns A promise that resolves to the created user and JWT token.
  */
@@ -54,7 +55,7 @@ export async function registerUser(data: {
   username: string;
   password: string;
 }): Promise<{ user: UserDocument; token: string }> {
-  const hashedPassword = await bcrypt.hash(data.password, 10);
+  const hashedPassword = await bcrypt.hash(data.password, 12);
   const user = await createUser({
     email: data.email,
     username: data.username,
@@ -65,10 +66,11 @@ export async function registerUser(data: {
     {
       userId: user._id.toString(),
       email: user.email,
+      username: user.username,  // Include username in JWT payload
       role: user.role  // Include role in JWT payload
     },
     JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '24h' }
   );
 
   return { user, token };
@@ -76,6 +78,7 @@ export async function registerUser(data: {
 
 /**
  * Authenticates a user with email and password.
+ * Generates a JWT token valid for 24 hours upon successful authentication.
  * @param email The user's email.
  * @param password The user's password.
  * @returns A promise that resolves to the user and JWT token, or null if authentication fails.
@@ -98,10 +101,11 @@ export async function loginUser(
     {
       userId: user._id.toString(),
       email: user.email,
+      username: user.username,  // Include username in JWT payload
       role: user.role  // Include role in JWT payload
     },
     JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '24h' }
   );
 
   return { user, token };

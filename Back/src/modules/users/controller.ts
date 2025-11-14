@@ -141,6 +141,13 @@ export class UsersController {
         return;
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({ message: 'email must be a valid email address' });
+        return;
+      }
+
       if (password.length < 8) {
         res.status(400).json({ message: 'password must be at least 8 characters long' });
         return;
