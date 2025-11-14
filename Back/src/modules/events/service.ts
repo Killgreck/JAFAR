@@ -172,3 +172,108 @@ export async function resolveEvent(
 
   return event;
 }
+
+/**
+ * Cancels an event and refunds all wagers.
+ * This function:
+ * 1. Finds all wagers for the event
+ * 2. Returns the wagered amount to each user's wallet
+ * 3. Marks all wagers as settled with actualPayout = amount
+ * 4. Changes event status to 'cancelled'
+ *
+ * @param id The ID of the event to cancel
+ * @param adminId The ID of the admin performing the cancellation
+ * @returns A promise that resolves to the cancelled event or null if not found
+ * @throws {EventValidationError} If the event cannot be cancelled
+ */
+export async function cancelEventWithRefund(
+  id: string,
+  adminId: string
+): Promise<EventDocument | null> {
+  const event = await EventModel.findById(id).exec();
+
+  if (!event) {
+    return null;
+  }
+
+  // Check if event is already cancelled or resolved
+  if (event.status === 'cancelled') {
+    throw new EventValidationError('Event is already cancelled');
+  }
+
+  if (event.status === 'resolved') {
+    throw new EventValidationError('Cannot cancel a resolved event');
+  }
+
+  // Import models dynamically to avoid circular dependencies
+  const { EventWagerModel } = await import('../event-wagers/model');
+  const { WalletModel } = await import('../wallet/model');
+
+  // Find all wagers for this event
+  const wagers = await EventWagerModel.find({
+    event: id,
+    settled: false,
+  }).exec();
+
+  // Process refunds for each wager
+  for (const wager of wagers) {
+    // Return amount to user's wallet (balanceAvailable)
+    await WalletModel.findOneAndUpdate(
+      { user: wager.user },
+      {
+        $inc: { balanceAvailable: wager.amount },
+        $set: { lastUpdated: new Date() },
+      }
+    ).exec();
+
+    // Mark wager as settled with full refund
+    wager.settled = true;
+    wager.actualPayout = wager.amount;
+    wager.settledAt = new Date();
+    await wager.save();
+  }
+
+  // Update event status to cancelled
+  event.status = 'cancelled';
+  await event.save();
+
+  return event;
+}
+
+/**
+ * Updates the dates of an event.
+ * Only allows updating dates if the event is still open.
+ *
+ * @param id The ID of the event to update
+ * @param bettingDeadline The new betting deadline
+ * @param expectedResolutionDate The new expected resolution date
+ * @returns A promise that resolves to the updated event or null if not found
+ * @throws {EventValidationError} If validation fails or event cannot be updated
+ */
+export async function updateEventDates(
+  id: string,
+  bettingDeadline: Date,
+  expectedResolutionDate: Date
+): Promise<EventDocument | null> {
+  const event = await EventModel.findById(id).exec();
+
+  if (!event) {
+    return null;
+  }
+
+  // Only allow updating dates for open events
+  if (event.status !== 'open') {
+    throw new EventValidationError('Can only update dates for open events');
+  }
+
+  // Validate the new dates
+  validateEventDates(bettingDeadline, expectedResolutionDate);
+
+  // Update the dates
+  event.bettingDeadline = bettingDeadline;
+  event.expectedResolutionDate = expectedResolutionDate;
+
+  await event.save();
+
+  return event;
+}

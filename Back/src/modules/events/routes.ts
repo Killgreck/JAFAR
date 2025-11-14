@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { EventController } from './controller';
 import { EvidenceController } from '../evidence/controller';
 import { authMiddleware } from '../../middleware/auth';
+import { requireAdmin, checkBannedUser } from '../../middleware/authorization';
 
 /**
  * Express router for event-related routes.
@@ -36,17 +37,31 @@ router.get('/:id', authMiddleware, controller.getById.bind(controller));
 
 /**
  * @route PUT /api/events/:id/status
- * @description Update the status of an event
- * @access Private (requires authentication)
+ * @description Update the status of an event (admin only)
+ * @access Private (requires admin role)
  */
-router.put('/:id/status', authMiddleware, controller.updateStatus.bind(controller));
+router.put('/:id/status', authMiddleware, checkBannedUser, requireAdmin, controller.updateStatus.bind(controller));
 
 /**
  * @route POST /api/events/:id/resolve
- * @description Resolve an event with a winning option
- * @access Private (requires authentication)
+ * @description Resolve an event with a winning option (admin only)
+ * @access Private (requires admin role)
  */
-router.post('/:id/resolve', authMiddleware, controller.resolve.bind(controller));
+router.post('/:id/resolve', authMiddleware, checkBannedUser, requireAdmin, controller.resolve.bind(controller));
+
+/**
+ * @route POST /api/events/:id/cancel
+ * @description Cancel an event and refund all wagers (admin only)
+ * @access Private (requires admin role)
+ */
+router.post('/:id/cancel', authMiddleware, checkBannedUser, requireAdmin, controller.cancel.bind(controller));
+
+/**
+ * @route PATCH /api/events/:id/dates
+ * @description Update the dates of an event (admin only)
+ * @access Private (requires admin role)
+ */
+router.patch('/:id/dates', authMiddleware, checkBannedUser, requireAdmin, controller.updateDates.bind(controller));
 
 /**
  * @route POST /api/events/:eventId/evidence

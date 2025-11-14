@@ -79,6 +79,36 @@ const userSchema = new mongoose.Schema(
       ref: 'User',
       required: false,
     },
+    /**
+     * Whether the user is currently banned from the platform.
+     */
+    isBanned: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
+    /**
+     * Timestamp when the user was banned.
+     */
+    bannedAt: {
+      type: Date,
+      required: false,
+    },
+    /**
+     * Admin who banned this user.
+     */
+    bannedBy: {
+      type: Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    /**
+     * Reason for banning the user.
+     */
+    banReason: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,

@@ -6,6 +6,8 @@ import {
   listEvents,
   updateEventStatus,
   resolveEvent,
+  cancelEventWithRefund,
+  updateEventDates,
   EventValidationError,
 } from './service';
 import { AuthenticatedRequest } from '../../middleware/auth';
@@ -279,6 +281,105 @@ export class EventController {
       }
 
       res.json(sanitizeEvent(event));
+    } catch (error) {
+      if (error instanceof EventValidationError) {
+        res.status(error.status).json({ message: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Cancels an event and refunds all wagers (admin only).
+   *
+   * @param req The authenticated request object
+   * @param res The response object
+   * @param next The next middleware function
+   */
+  async cancel(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const adminId = req.user!.userId;
+
+      if (!isValidObjectId(id)) {
+        res.status(400).json({ message: 'Invalid event ID' });
+        return;
+      }
+
+      const event = await cancelEventWithRefund(id, adminId);
+
+      if (!event) {
+        res.status(404).json({ message: 'Event not found' });
+        return;
+      }
+
+      res.json({
+        message: 'Event cancelled successfully and all wagers refunded',
+        event: sanitizeEvent(event),
+      });
+    } catch (error) {
+      if (error instanceof EventValidationError) {
+        res.status(error.status).json({ message: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Updates the dates of an event (admin only).
+   *
+   * @param req The authenticated request object
+   * @param res The response object
+   * @param next The next middleware function
+   */
+  async updateDates(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { bettingDeadline, expectedResolutionDate } = req.body;
+
+      if (!isValidObjectId(id)) {
+        res.status(400).json({ message: 'Invalid event ID' });
+        return;
+      }
+
+      if (!bettingDeadline) {
+        res.status(400).json({ message: 'Betting deadline is required' });
+        return;
+      }
+
+      if (!expectedResolutionDate) {
+        res.status(400).json({ message: 'Expected resolution date is required' });
+        return;
+      }
+
+      // Convert date strings to Date objects
+      const bettingDeadlineDate = new Date(bettingDeadline);
+      const expectedResolutionDateDate = new Date(expectedResolutionDate);
+
+      // Validate dates are valid
+      if (isNaN(bettingDeadlineDate.getTime())) {
+        res.status(400).json({ message: 'Invalid betting deadline date format' });
+        return;
+      }
+
+      if (isNaN(expectedResolutionDateDate.getTime())) {
+        res.status(400).json({ message: 'Invalid expected resolution date format' });
+        return;
+      }
+
+      const event = await updateEventDates(id, bettingDeadlineDate, expectedResolutionDateDate);
+
+      if (!event) {
+        res.status(404).json({ message: 'Event not found' });
+        return;
+      }
+
+      res.json({
+        message: 'Event dates updated successfully',
+        event: sanitizeEvent(event),
+      });
     } catch (error) {
       if (error instanceof EventValidationError) {
         res.status(error.status).json({ message: error.message });

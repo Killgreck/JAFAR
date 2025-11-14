@@ -106,3 +106,104 @@ export async function loginUser(
 
   return { user, token };
 }
+
+/**
+ * Bans a user from the platform.
+ * @param userId The ID of the user to ban.
+ * @param adminId The ID of the admin performing the ban.
+ * @param reason The reason for banning the user.
+ * @returns A promise that resolves to the updated user document or null if not found.
+ */
+export async function banUser(
+  userId: string,
+  adminId: string,
+  reason?: string
+): Promise<UserDocument | null> {
+  const user = await UserModel.findByIdAndUpdate(
+    userId,
+    {
+      isBanned: true,
+      bannedAt: new Date(),
+      bannedBy: adminId,
+      banReason: reason || 'No reason provided',
+    },
+    { new: true }
+  ).exec();
+
+  return user;
+}
+
+/**
+ * Unbans a user from the platform.
+ * @param userId The ID of the user to unban.
+ * @returns A promise that resolves to the updated user document or null if not found.
+ */
+export async function unbanUser(userId: string): Promise<UserDocument | null> {
+  const user = await UserModel.findByIdAndUpdate(
+    userId,
+    {
+      isBanned: false,
+      bannedAt: undefined,
+      bannedBy: undefined,
+      banReason: undefined,
+    },
+    { new: true }
+  ).exec();
+
+  return user;
+}
+
+/**
+ * Changes a user's role.
+ * @param userId The ID of the user to update.
+ * @param newRole The new role to assign.
+ * @returns A promise that resolves to the updated user document or null if not found.
+ */
+export async function changeUserRole(
+  userId: string,
+  newRole: 'user' | 'curator' | 'admin'
+): Promise<UserDocument | null> {
+  const updateData: any = { role: newRole };
+
+  // If changing to curator, set curatorStatus to approved
+  if (newRole === 'curator') {
+    updateData.curatorStatus = 'approved';
+    updateData.curatorApprovedAt = new Date();
+  }
+
+  const user = await UserModel.findByIdAndUpdate(
+    userId,
+    updateData,
+    { new: true }
+  ).exec();
+
+  return user;
+}
+
+/**
+ * Searches for users by name, username, or email.
+ * @param query The search query string.
+ * @returns A promise that resolves to an array of matching user documents.
+ */
+export async function searchUsers(query: string): Promise<UserDocument[]> {
+  const searchRegex = new RegExp(query, 'i'); // Case-insensitive search
+
+  const users = await UserModel.find({
+    $or: [
+      { username: searchRegex },
+      { email: searchRegex },
+    ],
+  }).exec();
+
+  return users;
+}
+
+/**
+ * Gets a list of all banned users.
+ * @returns A promise that resolves to an array of banned user documents.
+ */
+export async function getBannedUsers(): Promise<UserDocument[]> {
+  return UserModel.find({ isBanned: true })
+    .populate('bannedBy', 'username email')
+    .exec();
+}

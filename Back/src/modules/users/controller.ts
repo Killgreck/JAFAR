@@ -1,7 +1,16 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import type { MongoServerError } from 'mongodb';
-import { getUserById, registerUser, loginUser } from './service';
+import {
+  getUserById,
+  registerUser,
+  loginUser,
+  banUser,
+  unbanUser,
+  changeUserRole,
+  searchUsers,
+  getBannedUsers,
+} from './service';
 import type { UserDocument } from './model';
 
 const DUPLICATE_KEY_ERROR_CODE = 11000;
@@ -182,6 +191,198 @@ export class UsersController {
       res.json({
         token: result.token,
         user: sanitizeUser(result.user),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Bans a user from the platform (admin only).
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   */
+  async ban(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const adminId = (req as any).user?.userId;
+
+      if (!isValidObjectId(id)) {
+        res.status(400).json({ message: 'id must be a valid identifier' });
+        return;
+      }
+
+      // Check if trying to ban themselves
+      if (id === adminId) {
+        res.status(400).json({ message: 'You cannot ban yourself' });
+        return;
+      }
+
+      const user = await banUser(id, adminId, reason);
+
+      if (!user) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+
+      res.json({
+        message: 'User banned successfully',
+        user: {
+          id: user._id.toString(),
+          username: user.username,
+          email: user.email,
+          isBanned: user.isBanned,
+          bannedAt: user.bannedAt,
+          banReason: user.banReason,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Unbans a user from the platform (admin only).
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   */
+  async unban(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+
+      if (!isValidObjectId(id)) {
+        res.status(400).json({ message: 'id must be a valid identifier' });
+        return;
+      }
+
+      const user = await unbanUser(id);
+
+      if (!user) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+
+      res.json({
+        message: 'User unbanned successfully',
+        user: {
+          id: user._id.toString(),
+          username: user.username,
+          email: user.email,
+          isBanned: user.isBanned,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Changes a user's role (admin only).
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   */
+  async changeRole(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      const adminId = (req as any).user?.userId;
+
+      if (!isValidObjectId(id)) {
+        res.status(400).json({ message: 'id must be a valid identifier' });
+        return;
+      }
+
+      if (!role || !['user', 'curator', 'admin'].includes(role)) {
+        res.status(400).json({ message: 'Valid role is required (user, curator, or admin)' });
+        return;
+      }
+
+      // Check if trying to change their own role
+      if (id === adminId) {
+        res.status(400).json({ message: 'You cannot change your own role' });
+        return;
+      }
+
+      const user = await changeUserRole(id, role);
+
+      if (!user) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+
+      res.json({
+        message: 'User role changed successfully',
+        user: {
+          id: user._id.toString(),
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          curatorStatus: user.curatorStatus,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Searches for users by name, username, or email (admin only).
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   */
+  async search(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { q } = req.query;
+
+      if (!q || typeof q !== 'string') {
+        res.status(400).json({ message: 'Search query (q) is required' });
+        return;
+      }
+
+      const users = await searchUsers(q);
+
+      res.json({
+        users: users.map((user) => ({
+          id: user._id.toString(),
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isBanned: user.isBanned,
+          curatorStatus: user.curatorStatus,
+        })),
+        count: users.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Gets a list of all banned users (admin only).
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   */
+  async getBanned(req: Request, res: Response, next: NextFunction) {
+    try {
+      const users = await getBannedUsers();
+
+      res.json({
+        users: users.map((user) => ({
+          id: user._id.toString(),
+          username: user.username,
+          email: user.email,
+          isBanned: user.isBanned,
+          bannedAt: user.bannedAt,
+          bannedBy: user.bannedBy,
+          banReason: user.banReason,
+        })),
+        count: users.length,
       });
     } catch (error) {
       next(error);
