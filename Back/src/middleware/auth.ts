@@ -10,6 +10,7 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     userId: string;
     email: string;
+    role?: string;  // Role from JWT (optional, verified in authorization middleware)
   };
 }
 
@@ -41,12 +42,16 @@ export const authMiddleware = async (
     const decoded = jwt.verify(token, JWT_SECRET) as {
       userId: string;
       email: string;
+      role?: string;
     };
 
     // Attach user data to request
+    // Note: role from JWT is informational only
+    // Authorization middleware will verify role from database
     req.user = {
       userId: decoded.userId,
       email: decoded.email,
+      role: decoded.role,
     };
 
     next();

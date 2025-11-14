@@ -8,6 +8,8 @@ import { Dashboard } from './pages/Dashboard';
 import { CreateBet } from './pages/CreateBet';
 import { BetsList } from './pages/BetsList';
 import { CreateEvent } from './pages/CreateEvent';
+import { EventsList } from './pages/EventsList';
+import { EventEvidence } from './pages/EventEvidence';
 
 function App() {
   return (
@@ -46,6 +48,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreateEvent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events"
+            element={
+              <ProtectedRoute>
+                <EventsList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/:eventId/evidence"
+            element={
+              <ProtectedRoute>
+                <EventEvidence />
               </ProtectedRoute>
             }
           />

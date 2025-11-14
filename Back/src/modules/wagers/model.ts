@@ -1,6 +1,7 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
 export interface WagerDocument extends Document {
+  _id: Types.ObjectId;
   bet: Types.ObjectId;
   user: Types.ObjectId;
   side: 'for' | 'against';

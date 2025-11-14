@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import type { MongoServerError } from 'mongodb';
-import { createUser, getUserById, listUsers, registerUser, loginUser } from './service';
+import { getUserById, registerUser, loginUser } from './service';
 import type { UserDocument } from './model';
 
 const DUPLICATE_KEY_ERROR_CODE = 11000;
@@ -59,35 +59,21 @@ function isValidObjectId(value: unknown): value is string {
  */
 export class UsersController {
   /**
-   * @param _req The request object.
-   * @param res The response object.
-   * @param next The next middleware function.
-   * @returns A list of all users.
-   */
-  async list(_req: Request, res: Response, next: NextFunction) {
-    try {
-      const users = await listUsers();
-      res.json(users.map(sanitizeUser));
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
    * @param req The request object.
    * @param res The response object.
    * @param next The next middleware function.
-   * @returns The user with the specified ID.
+   * @returns The authenticated user's profile.
    */
-  async getById(req: Request, res: Response, next: NextFunction) {
+  async getMe(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      if (!isValidObjectId(id)) {
-        res.status(400).json({ message: 'id must be a valid identifier' });
+      const userId = (req as any).user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ message: 'Authentication required' });
         return;
       }
 
-      const user = await getUserById(id);
+      const user = await getUserById(userId);
       if (!user) {
         res.status(404).json({ message: 'User not found' });
         return;
@@ -102,35 +88,31 @@ export class UsersController {
    * @param req The request object.
    * @param res The response object.
    * @param next The next middleware function.
-   * @returns The created user.
+   * @returns The user with the specified ID (only if authorized).
    */
-  async create(req: Request, res: Response, next: NextFunction) {
+  async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, username, password } = req.body;
+      const { id } = req.params;
+      const authenticatedUserId = (req as any).user?.userId;
 
-      if (!email || !username || !password) {
-        res.status(400).json({ message: 'email, username and password are required' });
+      if (!isValidObjectId(id)) {
+        res.status(400).json({ message: 'id must be a valid identifier' });
         return;
       }
 
-      if (password.length < 8) {
-        res.status(400).json({ message: 'password must be at least 8 characters long' });
+      // Authorization check: users can only view their own profile
+      if (id !== authenticatedUserId) {
+        res.status(403).json({ message: 'You can only view your own profile' });
         return;
       }
 
-      const created = await createUser({
-        email,
-        username,
-        passwordHash: password,
-      });
-
-      res.status(201).json(sanitizeUser(created));
+      const user = await getUserById(id);
+      if (!user) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+      res.json(sanitizeUser(user));
     } catch (error) {
-      if (isDuplicateKeyError(error)) {
-        res.status(409).json({ message: 'User with the provided email or username already exists' });
-        return;
-      }
-
       next(error);
     }
   }

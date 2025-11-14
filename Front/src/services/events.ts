@@ -1,5 +1,5 @@
 import api from './api';
-import type { Event, CreateEventData } from '../types';
+import type { Event, CreateEventData, ResolveEventData } from '../types';
 
 export const eventsService = {
   async list(filters?: { category?: string; status?: string; creator?: string }): Promise<Event[]> {
@@ -30,8 +30,8 @@ export const eventsService = {
     return response.data;
   },
 
-  async resolve(id: string, winningOption: string): Promise<Event> {
-    const response = await api.post<Event>(`/events/${id}/resolve`, { winningOption });
+  async resolve(id: string, data: ResolveEventData): Promise<Event> {
+    const response = await api.post<Event>(`/events/${id}/resolve`, data);
     return response.data;
   },
 };
