@@ -26,6 +26,17 @@ export const VALID_STATUSES = [
 export type EventStatus = typeof VALID_STATUSES[number];
 
 /**
+ * Valid evidence submission phases.
+ */
+export const VALID_EVIDENCE_PHASES = [
+  'none',
+  'creator',
+  'public',
+] as const;
+
+export type EvidencePhase = typeof VALID_EVIDENCE_PHASES[number];
+
+/**
  * Mongoose schema for the Event model.
  */
 const eventSchema = new mongoose.Schema(
@@ -77,6 +88,25 @@ const eventSchema = new mongoose.Schema(
       required: [true, 'Betting deadline is required'],
     },
     /**
+     * Deadline for creator to submit evidence (bettingDeadline + 24 hours).
+     * After this deadline, public can submit evidence.
+     */
+    evidenceDeadline: {
+      type: Date,
+      required: false,
+    },
+    /**
+     * Current phase of evidence submission (none/creator/public).
+     */
+    evidenceSubmissionPhase: {
+      type: String,
+      enum: {
+        values: VALID_EVIDENCE_PHASES,
+        message: 'Evidence phase must be one of: ' + VALID_EVIDENCE_PHASES.join(', '),
+      },
+      default: 'none',
+    },
+    /**
      * Expected date when the event will be resolved.
      */
     expectedResolutionDate: {
@@ -121,6 +151,39 @@ const eventSchema = new mongoose.Schema(
       type: Date,
       required: false,
     },
+    /**
+     * The curator who resolved the event.
+     */
+    resolvedBy: {
+      type: Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    /**
+     * Curator's rationale/reason for the decision.
+     */
+    resolutionRationale: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [1000, 'Resolution rationale cannot exceed 1000 characters'],
+    },
+    /**
+     * The evidence used by curator to make the decision.
+     */
+    evidenceUsed: {
+      type: Types.ObjectId,
+      ref: 'Evidence',
+      required: false,
+    },
+    /**
+     * Curator commission paid from this event (0.5% of total pool).
+     */
+    curatorCommission: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -138,6 +201,12 @@ eventSchema.pre('save', function(next) {
   if (this.isNew && this.bettingDeadline < oneHourFromNow) {
     const error = new Error('Betting deadline must be at least 1 hour from now');
     return next(error);
+  }
+
+  // Auto-calculate evidence deadline (betting deadline + 24 hours)
+  if (this.isNew || this.isModified('bettingDeadline')) {
+    const oneDayInMs = 24 * 60 * 60 * 1000;
+    this.evidenceDeadline = new Date(this.bettingDeadline.getTime() + oneDayInMs);
   }
 
   // Validate expected resolution date is after betting deadline

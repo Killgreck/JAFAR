@@ -68,5 +68,6 @@ export type WalletDocument = mongoose.HydratedDocument<Wallet>;
 
 /**
  * Mongoose model for the Wallet schema.
+ * Use existing model if already compiled (for hot-reload support)
  */
-export const WalletModel = mongoose.model('Wallet', walletSchema);
+export const WalletModel = mongoose.models.Wallet || mongoose.model('Wallet', walletSchema);

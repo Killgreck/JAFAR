@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { EventController } from './controller';
+import { EvidenceController } from '../evidence/controller';
 import { authMiddleware } from '../../middleware/auth';
 
 /**
@@ -7,6 +8,7 @@ import { authMiddleware } from '../../middleware/auth';
  */
 const router = Router();
 const controller = new EventController();
+const evidenceController = new EvidenceController();
 
 /**
  * @route POST /api/events
@@ -45,6 +47,20 @@ router.put('/:id/status', authMiddleware, controller.updateStatus.bind(controlle
  * @access Private (requires authentication)
  */
 router.post('/:id/resolve', authMiddleware, controller.resolve.bind(controller));
+
+/**
+ * @route POST /api/events/:eventId/evidence
+ * @description Submit evidence for an event
+ * @access Private (requires authentication)
+ */
+router.post('/:eventId/evidence', authMiddleware, evidenceController.submitEvidence.bind(evidenceController));
+
+/**
+ * @route GET /api/events/:eventId/evidence
+ * @description Get all evidence for an event
+ * @access Public
+ */
+router.get('/:eventId/evidence', evidenceController.getEventEvidence.bind(evidenceController));
 
 /**
  * Express router for event-related API endpoints.

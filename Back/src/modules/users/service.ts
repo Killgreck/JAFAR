@@ -62,7 +62,11 @@ export async function registerUser(data: {
   });
 
   const token = jwt.sign(
-    { userId: user._id.toString(), email: user.email },
+    {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role  // Include role in JWT payload
+    },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -91,7 +95,11 @@ export async function loginUser(
   }
 
   const token = jwt.sign(
-    { userId: user._id.toString(), email: user.email },
+    {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role  // Include role in JWT payload
+    },
     JWT_SECRET,
     { expiresIn: '7d' }
   );

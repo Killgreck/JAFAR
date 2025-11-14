@@ -1,14 +1,14 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import path from 'path';
 import { randomBytes } from 'crypto';
 import { mkdirSync } from 'fs';
 
-let mongoServer: MongoMemoryServer | null = null;
+let mongoServer: MongoMemoryReplSet | null = null;
 
 const uniqueId = randomBytes(8).toString('hex');
-const customTmpDir = path.join('/mnt/data/tmp-test', uniqueId);
+const customTmpDir = path.join('/tmp/tmp-test', uniqueId);
 
 beforeAll(
   async () => {
@@ -16,13 +16,15 @@ beforeAll(
 
     mkdirSync(customTmpDir, { recursive: true });
 
-    mongoServer = await MongoMemoryServer.create({
+    mongoServer = await MongoMemoryReplSet.create({
       binary: {
         version: '6.0.4',
-        downloadDir: path.join('/mnt/data/tmp-test', 'mongodb-binaries'),
+        downloadDir: path.join('/tmp/tmp-test', 'mongodb-binaries'),
       },
-      instance: {
-        dbPath: customTmpDir,
+      replSet: {
+        name: 'testReplSet',
+        count: 1,
+        dbName: 'test',
         storageEngine: 'ephemeralForTest',
       },
     });

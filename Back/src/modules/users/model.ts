@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 /**
  * Mongoose schema for the User model.
@@ -38,6 +38,46 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 25,
       min: 0,
+    },
+    /**
+     * The user's role in the system.
+     * - user: Regular user, can place bets and create events
+     * - curator: Can curate/resolve events after betting deadline
+     * - admin: Full system access, can approve curators
+     */
+    role: {
+      type: String,
+      enum: ['user', 'curator', 'admin'],
+      default: 'user',
+      required: true,
+    },
+    /**
+     * Curator approval status.
+     * - none: Not a curator, no application
+     * - pending: Curator application submitted, awaiting review
+     * - approved: Curator application approved
+     * - rejected: Curator application rejected
+     */
+    curatorStatus: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none',
+      required: true,
+    },
+    /**
+     * Timestamp when the user was approved as curator.
+     */
+    curatorApprovedAt: {
+      type: Date,
+      required: false,
+    },
+    /**
+     * Admin who approved this user as curator.
+     */
+    curatorApprovedBy: {
+      type: Types.ObjectId,
+      ref: 'User',
+      required: false,
     },
   },
   {
@@ -84,5 +124,6 @@ export type UserDocument = mongoose.HydratedDocument<User>;
 
 /**
  * Mongoose model for the User schema.
+ * Use existing model if already compiled (for hot-reload support)
  */
-export const UserModel = mongoose.model('User', userSchema);
+export const UserModel = mongoose.models.User || mongoose.model('User', userSchema);
