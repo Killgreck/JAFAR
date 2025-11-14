@@ -20,13 +20,28 @@ router.post('/', authMiddleware, controller.create.bind(controller));
 
 /**
  * @route GET /api/events
- * @description List all events with optional filters
+ * @description List all events with optional filters (legacy endpoint)
  * @query category - Filter by category (optional)
  * @query status - Filter by status (optional)
  * @query creator - Filter by creator ID (optional)
  * @access Private (requires authentication)
  */
 router.get('/', authMiddleware, controller.list.bind(controller));
+
+/**
+ * @route GET /api/events/search
+ * @description Search and filter events with pagination
+ * @query q or search - Search text (optional)
+ * @query category - Filter by category (optional)
+ * @query status - Filter by status (optional)
+ * @query dateFrom - Filter by bettingDeadline start date (optional, ISO 8601)
+ * @query dateTo - Filter by bettingDeadline end date (optional, ISO 8601)
+ * @query sortBy - Sort by: recent, closing_soon, most_bets (optional, default: recent)
+ * @query page - Page number (optional, default: 1)
+ * @query limit - Results per page (optional, default: 20, max: 100)
+ * @access Private (requires authentication)
+ */
+router.get('/search', authMiddleware, controller.search.bind(controller));
 
 /**
  * @route GET /api/events/:id
