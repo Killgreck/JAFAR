@@ -207,3 +207,90 @@ export async function countEvidenceByRole(eventId: string): Promise<{ creator: n
 
   return counts;
 }
+
+/**
+ * Adds a like to an evidence from a user.
+ *
+ * @param evidenceId The ID of the evidence
+ * @param userId The ID of the user liking the evidence
+ * @returns A promise that resolves to the updated evidence document
+ * @throws {EvidenceValidationError} If evidence not found or user already liked it
+ */
+export async function likeEvidence(evidenceId: string, userId: string): Promise<EvidenceDocument | null> {
+  const evidence = await EvidenceModel.findById(evidenceId);
+
+  if (!evidence) {
+    throw new EvidenceValidationError('Evidence not found');
+  }
+
+  // Check if user already liked this evidence
+  if (evidence.likes.some((like) => like.toString() === userId)) {
+    throw new EvidenceValidationError('You already liked this evidence');
+  }
+
+  // Add like
+  evidence.likes.push(new Types.ObjectId(userId));
+  evidence.likesCount = evidence.likes.length;
+
+  await evidence.save();
+
+  return evidence;
+}
+
+/**
+ * Removes a like from an evidence.
+ *
+ * @param evidenceId The ID of the evidence
+ * @param userId The ID of the user removing their like
+ * @returns A promise that resolves to the updated evidence document
+ * @throws {EvidenceValidationError} If evidence not found or user hasn't liked it
+ */
+export async function unlikeEvidence(evidenceId: string, userId: string): Promise<EvidenceDocument | null> {
+  const evidence = await EvidenceModel.findById(evidenceId);
+
+  if (!evidence) {
+    throw new EvidenceValidationError('Evidence not found');
+  }
+
+  // Check if user has liked this evidence
+  const likeIndex = evidence.likes.findIndex((like) => like.toString() === userId);
+  if (likeIndex === -1) {
+    throw new EvidenceValidationError('You have not liked this evidence');
+  }
+
+  // Remove like
+  evidence.likes.splice(likeIndex, 1);
+  evidence.likesCount = evidence.likes.length;
+
+  await evidence.save();
+
+  return evidence;
+}
+
+/**
+ * Gets the most liked evidence for an event.
+ *
+ * @param eventId The ID of the event
+ * @returns A promise that resolves to the most liked evidence or null
+ */
+export async function getMostLikedEvidence(eventId: string): Promise<EvidenceDocument | null> {
+  return EvidenceModel
+    .findOne({ event: eventId })
+    .sort({ likesCount: -1 })
+    .populate('submittedBy', 'username email')
+    .exec();
+}
+
+/**
+ * Gets all evidence for an event sorted by likes (most liked first).
+ *
+ * @param eventId The ID of the event
+ * @returns A promise that resolves to an array of evidence documents sorted by likes
+ */
+export async function getEvidenceByEventIdSortedByLikes(eventId: string): Promise<EvidenceDocument[]> {
+  return EvidenceModel
+    .find({ event: eventId })
+    .populate('submittedBy', 'username email')
+    .sort({ likesCount: -1, createdAt: 1 })
+    .exec();
+}

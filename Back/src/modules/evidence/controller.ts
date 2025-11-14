@@ -100,4 +100,64 @@ export class EvidenceController {
       return res.status(500).json({ message: 'Failed to fetch evidence' });
     }
   }
+
+  /**
+   * Like an evidence.
+   * POST /api/events/:eventId/evidence/:evidenceId/like
+   */
+  async likeEvidence(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { evidenceId } = req.params;
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const evidence = await evidenceService.likeEvidence(evidenceId, userId);
+
+      return res.status(200).json({
+        message: 'Evidence liked successfully',
+        likesCount: evidence?.likesCount || 0,
+      });
+    } catch (error: any) {
+      console.error('Error liking evidence:', error);
+
+      if (error.name === 'EvidenceValidationError') {
+        return res.status(error.status || 400).json({ message: error.message });
+      }
+
+      return res.status(500).json({ message: 'Failed to like evidence' });
+    }
+  }
+
+  /**
+   * Unlike an evidence.
+   * DELETE /api/events/:eventId/evidence/:evidenceId/like
+   */
+  async unlikeEvidence(req: AuthenticatedRequest, res: Response): Promise<Response> {
+    try {
+      const { evidenceId } = req.params;
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const evidence = await evidenceService.unlikeEvidence(evidenceId, userId);
+
+      return res.status(200).json({
+        message: 'Evidence unliked successfully',
+        likesCount: evidence?.likesCount || 0,
+      });
+    } catch (error: any) {
+      console.error('Error unliking evidence:', error);
+
+      if (error.name === 'EvidenceValidationError') {
+        return res.status(error.status || 400).json({ message: error.message });
+      }
+
+      return res.status(500).json({ message: 'Failed to unlike evidence' });
+    }
+  }
 }

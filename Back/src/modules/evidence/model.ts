@@ -103,6 +103,21 @@ const evidenceSchema = new mongoose.Schema(
       required: [true, 'Supported option is required'],
       trim: true,
     },
+    /**
+     * Array of users who liked this evidence.
+     */
+    likes: {
+      type: [{ type: Types.ObjectId, ref: 'User' }],
+      default: [],
+    },
+    /**
+     * Number of likes (denormalized for performance).
+     */
+    likesCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
@@ -134,6 +149,7 @@ evidenceSchema.pre('save', function(next) {
  */
 evidenceSchema.index({ event: 1, submittedBy: 1 });
 evidenceSchema.index({ event: 1, submitterRole: 1 });
+evidenceSchema.index({ event: 1, likesCount: -1 }); // For sorting by most liked
 
 /**
  * Represents evidence in the database.

@@ -8,6 +8,7 @@ import {
   resolveEvent,
   cancelEventWithRefund,
   updateEventDates,
+  getEventsReadyForCuration,
   EventValidationError,
 } from './service';
 import { AuthenticatedRequest } from '../../middleware/auth';
@@ -385,6 +386,26 @@ export class EventController {
         res.status(error.status).json({ message: error.message });
         return;
       }
+      next(error);
+    }
+  }
+
+  /**
+   * Gets events ready for curation (curator only).
+   *
+   * @param req The authenticated request object
+   * @param res The response object
+   * @param next The next middleware function
+   */
+  async getEventsForCuration(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const events = await getEventsReadyForCuration();
+
+      res.json({
+        events: events.map(sanitizeEvent),
+        count: events.length,
+      });
+    } catch (error) {
       next(error);
     }
   }

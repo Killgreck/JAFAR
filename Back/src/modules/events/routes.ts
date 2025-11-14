@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { EventController } from './controller';
 import { EvidenceController } from '../evidence/controller';
 import { authMiddleware } from '../../middleware/auth';
-import { requireAdmin, checkBannedUser } from '../../middleware/authorization';
+import { requireAdmin, requireCuratorOrAdmin, checkBannedUser } from '../../middleware/authorization';
 
 /**
  * Express router for event-related routes.
@@ -44,10 +44,10 @@ router.put('/:id/status', authMiddleware, checkBannedUser, requireAdmin, control
 
 /**
  * @route POST /api/events/:id/resolve
- * @description Resolve an event with a winning option (admin only)
- * @access Private (requires admin role)
+ * @description Resolve an event with a winning option (curator or admin only)
+ * @access Private (requires curator or admin role)
  */
-router.post('/:id/resolve', authMiddleware, checkBannedUser, requireAdmin, controller.resolve.bind(controller));
+router.post('/:id/resolve', authMiddleware, checkBannedUser, requireCuratorOrAdmin, controller.resolve.bind(controller));
 
 /**
  * @route POST /api/events/:id/cancel
@@ -64,6 +64,13 @@ router.post('/:id/cancel', authMiddleware, checkBannedUser, requireAdmin, contro
 router.patch('/:id/dates', authMiddleware, checkBannedUser, requireAdmin, controller.updateDates.bind(controller));
 
 /**
+ * @route GET /api/events/curation/ready
+ * @description Get events ready for curation (curator or admin only)
+ * @access Private (requires curator or admin role)
+ */
+router.get('/curation/ready', authMiddleware, checkBannedUser, requireCuratorOrAdmin, controller.getEventsForCuration.bind(controller));
+
+/**
  * @route POST /api/events/:eventId/evidence
  * @description Submit evidence for an event
  * @access Private (requires authentication)
@@ -76,6 +83,20 @@ router.post('/:eventId/evidence', authMiddleware, evidenceController.submitEvide
  * @access Public
  */
 router.get('/:eventId/evidence', evidenceController.getEventEvidence.bind(evidenceController));
+
+/**
+ * @route POST /api/events/:eventId/evidence/:evidenceId/like
+ * @description Like an evidence
+ * @access Private (requires authentication)
+ */
+router.post('/:eventId/evidence/:evidenceId/like', authMiddleware, checkBannedUser, evidenceController.likeEvidence.bind(evidenceController));
+
+/**
+ * @route DELETE /api/events/:eventId/evidence/:evidenceId/like
+ * @description Unlike an evidence
+ * @access Private (requires authentication)
+ */
+router.delete('/:eventId/evidence/:evidenceId/like', authMiddleware, checkBannedUser, evidenceController.unlikeEvidence.bind(evidenceController));
 
 /**
  * Express router for event-related API endpoints.

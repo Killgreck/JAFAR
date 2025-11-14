@@ -174,6 +174,68 @@ export async function resolveEvent(
 }
 
 /**
+ * Updates the evidence submission phase for an event based on current time.
+ *
+ * @param event The event document to update
+ * @returns The updated event document
+ */
+export async function updateEvidencePhase(event: EventDocument): Promise<EventDocument> {
+  const now = new Date();
+  let newPhase: 'none' | 'creator' | 'public' = 'none';
+
+  // Determine the correct phase based on time
+  if (now < event.bettingDeadline) {
+    newPhase = 'none';
+  } else if (now >= event.bettingDeadline && now < event.evidenceDeadline!) {
+    newPhase = 'creator';
+  } else if (now >= event.evidenceDeadline!) {
+    newPhase = 'public';
+  }
+
+  // Update if phase has changed
+  if (event.evidenceSubmissionPhase !== newPhase) {
+    event.evidenceSubmissionPhase = newPhase;
+    await event.save();
+  }
+
+  return event;
+}
+
+/**
+ * Gets events that are ready for curation (closed status with evidence).
+ * These are events past the evidence deadline with public evidence submitted.
+ *
+ * @returns A promise that resolves to an array of events ready for curation
+ */
+export async function getEventsReadyForCuration(): Promise<EventDocument[]> {
+  const now = new Date();
+
+  // Events where:
+  // 1. Evidence deadline has passed
+  // 2. Status is 'closed' (betting finished but not resolved)
+  // 3. Has at least some evidence
+  const events = await EventModel.find({
+    evidenceDeadline: { $lt: now },
+    status: { $in: ['open', 'closed'] },
+  })
+    .populate('creator', 'username email')
+    .sort({ evidenceDeadline: 1 })
+    .exec();
+
+  // Update phases for all these events
+  for (const event of events) {
+    await updateEvidencePhase(event);
+    // Auto-close events that are still open
+    if (event.status === 'open' && now >= event.bettingDeadline) {
+      event.status = 'closed';
+      await event.save();
+    }
+  }
+
+  return events;
+}
+
+/**
  * Cancels an event and refunds all wagers.
  * This function:
  * 1. Finds all wagers for the event
