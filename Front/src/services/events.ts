@@ -1,5 +1,5 @@
 import api from './api';
-import type { Event, CreateEventData, ResolveEventData } from '../types';
+import type { Event, CreateEventData, ResolveEventData, PaginationMeta } from '../types';
 
 export const eventsService = {
   async list(filters?: { category?: string; status?: string; creator?: string }): Promise<Event[]> {
@@ -12,6 +12,36 @@ export const eventsService = {
     const url = queryString ? `/events?${queryString}` : '/events';
 
     const response = await api.get<Event[]>(url);
+    return response.data;
+  },
+
+  async listPaginated(params?: {
+    search?: string;
+    category?: string;
+    status?: string;
+    creator?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    sortBy?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ events: Event[]; pagination: PaginationMeta }> {
+    const urlParams = new URLSearchParams();
+
+    if (params?.search) urlParams.append('search', params.search);
+    if (params?.category) urlParams.append('category', params.category);
+    if (params?.status) urlParams.append('status', params.status);
+    if (params?.creator) urlParams.append('creator', params.creator);
+    if (params?.dateFrom) urlParams.append('dateFrom', params.dateFrom);
+    if (params?.dateTo) urlParams.append('dateTo', params.dateTo);
+    if (params?.sortBy) urlParams.append('sortBy', params.sortBy);
+    if (params?.page) urlParams.append('page', params.page.toString());
+    if (params?.limit) urlParams.append('limit', params.limit.toString());
+
+    const queryString = urlParams.toString();
+    const url = queryString ? `/events?${queryString}` : '/events';
+
+    const response = await api.get<{ events: Event[]; pagination: PaginationMeta }>(url);
     return response.data;
   },
 

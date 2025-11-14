@@ -90,6 +90,7 @@ export interface Event {
   resolutionRationale?: string;
   evidenceUsed?: string;
   curatorCommission?: number;
+  totalAmount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -160,4 +161,19 @@ export interface BannedUser extends User {
     username: string;
     email: string;
   };
+}
+
+// Pagination interfaces
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationMeta;
 }

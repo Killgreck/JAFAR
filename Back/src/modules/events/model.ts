@@ -233,6 +233,16 @@ eventSchema.index({ status: 1 });
 eventSchema.index({ bettingDeadline: 1 });
 
 /**
+ * Text index for searching by title and description.
+ */
+eventSchema.index({ title: 'text', description: 'text' });
+
+/**
+ * Compound index for filtering by category, status, and betting deadline.
+ */
+eventSchema.index({ category: 1, status: 1, bettingDeadline: 1 });
+
+/**
  * Represents an event in the database.
  */
 export type Event = mongoose.InferSchemaType<typeof eventSchema>;
