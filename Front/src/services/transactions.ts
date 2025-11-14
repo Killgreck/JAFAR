@@ -69,12 +69,4 @@ export const transactionsService = {
 
     return response.data;
   },
-
-  /**
-   * Get a specific transaction by ID
-   */
-  async getById(id: string): Promise<Transaction> {
-    const response = await api.get<Transaction>(`/wallet/transactions/${id}`);
-    return response.data;
-  },
 };
