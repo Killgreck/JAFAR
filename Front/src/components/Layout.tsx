@@ -47,6 +47,14 @@ export function Layout({ children }: LayoutProps) {
                   >
                     Eventos
                   </button>
+                  {(user.role === 'curator' || user.role === 'admin') && user.curatorStatus === 'approved' && (
+                    <button
+                      onClick={() => navigate('/curator/panel')}
+                      className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
+                    >
+                      Panel de Curador
+                    </button>
+                  )}
                   {user.role === 'admin' && (
                     <>
                       <button

@@ -57,6 +57,35 @@ export function EventsList() {
     );
   };
 
+  const getEvidencePhaseBadge = (event: Event) => {
+    const now = new Date();
+    const bettingDeadline = new Date(event.bettingDeadline);
+    const evidenceDeadline = event.evidenceDeadline ? new Date(event.evidenceDeadline) : null;
+
+    if (now < bettingDeadline) {
+      return null; // No phase badge during betting
+    }
+
+    if (evidenceDeadline && now < evidenceDeadline) {
+      const hoursLeft = Math.max(0, Math.floor((evidenceDeadline.getTime() - now.getTime()) / (1000 * 60 * 60)));
+      return (
+        <span className="px-2 py-1 text-xs rounded border bg-blue-900 text-blue-200 border-blue-700">
+          📝 Fase Creador ({hoursLeft}h restantes)
+        </span>
+      );
+    }
+
+    if (evidenceDeadline && now >= evidenceDeadline) {
+      return (
+        <span className="px-2 py-1 text-xs rounded border bg-purple-900 text-purple-200 border-purple-700">
+          🌍 Fase Pública
+        </span>
+      );
+    }
+
+    return null;
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
@@ -150,7 +179,7 @@ export function EventsList() {
                       {getStatusBadge(event.status)}
                     </div>
                     <p className="text-gray-400 text-sm mb-2">{event.description}</p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="px-2 py-1 bg-purple-900 text-purple-200 text-xs rounded border border-purple-700">
                         {event.category}
                       </span>
@@ -159,6 +188,7 @@ export function EventsList() {
                           Ganador: {event.winningOption}
                         </span>
                       )}
+                      {getEvidencePhaseBadge(event)}
                     </div>
                   </div>
                 </div>
