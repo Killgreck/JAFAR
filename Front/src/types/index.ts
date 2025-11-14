@@ -208,3 +208,44 @@ export interface EventSearchResult {
   events: Event[];
   pagination: PaginationInfo;
 }
+
+// Transaction interfaces
+export type TransactionType = 'deposit' | 'withdraw' | 'block' | 'release' | 'win' | 'loss' | 'commission';
+
+export interface Transaction {
+  id: string;
+  user: string;
+  wallet: string;
+  type: TransactionType;
+  amount: number;
+  balanceAfter: number;
+  blockedBalanceAfter?: number;
+  description: string;
+  relatedEvent?: {
+    id: string;
+    title: string;
+  };
+  relatedWager?: {
+    id: string;
+  };
+  relatedBet?: {
+    id: string;
+    question: string;
+  };
+  metadata?: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionFilters {
+  type?: TransactionType;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface TransactionSearchResult {
+  transactions: Transaction[];
+  pagination: PaginationInfo;
+}

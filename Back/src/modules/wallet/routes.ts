@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { WalletController } from './controller';
+import { transactionsRouter } from '../transactions/routes';
 
 /**
  * Express router for wallet-related routes.
@@ -27,6 +28,12 @@ router.post('/', controller.create.bind(controller));
  * @access Public
  */
 router.put('/:userId/balance', controller.updateBalance.bind(controller));
+
+/**
+ * Mount transaction routes under /api/wallet
+ * Includes routes for transaction history and stats
+ */
+router.use('/', transactionsRouter);
 
 /**
  * Express router for wallet-related API endpoints.
