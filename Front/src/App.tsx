@@ -15,6 +15,7 @@ import { EventEvidence } from './pages/EventEvidence';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminEvents } from './pages/AdminEvents';
 import { CuratorPanel } from './pages/CuratorPanel';
+import { Profile } from './pages/Profile';
 
 function App() {
   return (
@@ -29,6 +30,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />

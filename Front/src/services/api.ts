@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, LoginCredentials, RegisterData } from '../types';
+import type { AuthResponse, LoginCredentials, RegisterData, UserProfile, UpdateProfileData, User } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -38,6 +38,18 @@ export const authService = {
   async logout(): Promise<void> {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+  },
+};
+
+export const profileService = {
+  async getProfile(): Promise<UserProfile> {
+    const response = await api.get<UserProfile>('/users/profile');
+    return response.data;
+  },
+
+  async updateProfile(data: UpdateProfileData): Promise<{ message: string; user: User }> {
+    const response = await api.put<{ message: string; user: User }>('/users/profile', data);
+    return response.data;
   },
 };
 

@@ -31,6 +31,20 @@ router.post('/login', controller.login.bind(controller));
 router.get('/me', authMiddleware, controller.getMe.bind(controller));
 
 /**
+ * @route GET /api/users/profile
+ * @description Get the authenticated user's profile with statistics.
+ * @access Private (requires authentication)
+ */
+router.get('/profile', authMiddleware, checkBannedUser, controller.getProfile.bind(controller));
+
+/**
+ * @route PUT /api/users/profile
+ * @description Update the authenticated user's profile (username and avatar).
+ * @access Private (requires authentication)
+ */
+router.put('/profile', authMiddleware, checkBannedUser, controller.updateProfile.bind(controller));
+
+/**
  * @route GET /api/users/search
  * @description Search for users by username or email.
  * @access Private (requires admin role)

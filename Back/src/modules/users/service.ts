@@ -297,3 +297,116 @@ export async function getBannedUsers(): Promise<UserDocument[]> {
     .populate('bannedBy', 'username email')
     .exec();
 }
+
+/**
+ * Gets user profile with betting statistics.
+ * @param userId The ID of the user to get profile for.
+ * @returns A promise that resolves to the user profile with statistics.
+ */
+export async function getUserProfile(userId: string): Promise<{
+  user: UserDocument;
+  statistics: {
+    totalBets: number;
+    wonBets: number;
+    lostBets: number;
+    activeBets: number;
+    successRate: number;
+  };
+} | null> {
+  const user = await UserModel.findById(userId).exec();
+  if (!user) {
+    return null;
+  }
+
+  // Import WagerModel dynamically to avoid circular dependencies
+  const { WagerModel } = await import('../wagers/model');
+  const { BetModel } = await import('../bets/model');
+
+  // Get all wagers for this user
+  const wagers = await WagerModel.find({ user: userId }).populate('bet').exec();
+
+  let wonBets = 0;
+  let lostBets = 0;
+  let activeBets = 0;
+
+  for (const wager of wagers) {
+    const bet = wager.bet as any;
+
+    if (bet.status === 'settled') {
+      // Check if user won or lost
+      if (wager.payout && wager.payout > 0) {
+        wonBets++;
+      } else {
+        lostBets++;
+      }
+    } else if (bet.status === 'open') {
+      activeBets++;
+    }
+  }
+
+  const totalBets = wonBets + lostBets;
+  const successRate = totalBets > 0 ? (wonBets / totalBets) * 100 : 0;
+
+  return {
+    user,
+    statistics: {
+      totalBets,
+      wonBets,
+      lostBets,
+      activeBets,
+      successRate,
+    },
+  };
+}
+
+/**
+ * Updates user profile (username and avatar).
+ * @param userId The ID of the user to update.
+ * @param data The data to update (username and/or avatar).
+ * @returns A promise that resolves to the updated user document or null if not found.
+ */
+export async function updateUserProfile(
+  userId: string,
+  data: {
+    username?: string;
+    avatar?: string;
+  }
+): Promise<UserDocument | null> {
+  const updateData: any = {};
+
+  if (data.username !== undefined) {
+    updateData.username = data.username;
+  }
+
+  if (data.avatar !== undefined) {
+    updateData.avatar = data.avatar;
+  }
+
+  const user = await UserModel.findByIdAndUpdate(
+    userId,
+    updateData,
+    { new: true }
+  ).exec();
+
+  return user;
+}
+
+/**
+ * Checks if a username is available (not already taken).
+ * @param username The username to check.
+ * @param excludeUserId Optional user ID to exclude from the check (for current user).
+ * @returns A promise that resolves to true if username is available, false otherwise.
+ */
+export async function isUsernameAvailable(
+  username: string,
+  excludeUserId?: string
+): Promise<boolean> {
+  const query: any = { username };
+
+  if (excludeUserId) {
+    query._id = { $ne: excludeUserId };
+  }
+
+  const existingUser = await UserModel.findOne(query).exec();
+  return !existingUser;
+}
