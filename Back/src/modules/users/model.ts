@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
   {
     /**
      * The user's email address.
+     * Validated with regex to ensure proper email format.
      */
     email: {
       type: String,
@@ -14,6 +15,13 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      validate: {
+        validator: function(v: string) {
+          // RFC 5322 simplified regex for email validation
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        },
+        message: (props: any) => `${props.value} is not a valid email address`
+      }
     },
     /**
      * The user's username.
@@ -110,12 +118,22 @@ const userSchema = new mongoose.Schema(
       required: false,
     },
     /**
-     * User's avatar URL or identifier.
+     * Number of failed login attempts since last successful login.
+     * Used for rate limiting to prevent brute force attacks.
      */
-    avatar: {
-      type: String,
+    loginAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+      required: true,
+    },
+    /**
+     * Timestamp until which the account is locked due to failed login attempts.
+     * Account will be locked for 15 minutes after 5 failed attempts.
+     */
+    lockUntil: {
+      type: Date,
       required: false,
-      default: null,
     },
   },
   {

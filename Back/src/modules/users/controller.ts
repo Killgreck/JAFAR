@@ -146,6 +146,13 @@ export class UsersController {
         return;
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({ message: 'email must be a valid email address' });
+        return;
+      }
+
       if (password.length < 8) {
         res.status(400).json({ message: 'password must be at least 8 characters long' });
         return;
@@ -186,17 +193,30 @@ export class UsersController {
         return;
       }
 
-      const result = await loginUser(email, password);
+      try {
+        const result = await loginUser(email, password);
 
-      if (!result) {
-        res.status(401).json({ message: 'Invalid email or password' });
-        return;
+        if (!result) {
+          res.status(401).json({ message: 'Invalid email or password' });
+          return;
+        }
+
+        res.json({
+          token: result.token,
+          user: sanitizeUser(result.user),
+        });
+      } catch (loginError: any) {
+        // Check if it's an account lock error
+        if (loginError.message && loginError.message.includes('locked')) {
+          res.status(429).json({
+            message: loginError.message,
+            error: 'ACCOUNT_LOCKED'
+          });
+          return;
+        }
+        // Re-throw other errors
+        throw loginError;
       }
-
-      res.json({
-        token: result.token,
-        user: sanitizeUser(result.user),
-      });
     } catch (error) {
       next(error);
     }
