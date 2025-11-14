@@ -11,6 +11,8 @@ type SanitizedUser = {
   email: string;
   username: string;
   balance: number;
+  role: string;
+  curatorStatus?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -26,6 +28,8 @@ function sanitizeUser(user: UserDocument): SanitizedUser {
     email: user.email,
     username: user.username,
     balance: user.balance ?? 25,
+    role: user.role,
+    curatorStatus: user.curatorStatus,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
