@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { UsersController } from './controller';
 import { authMiddleware } from '../../middleware/auth';
+import { requireAdmin, checkBannedUser } from '../../middleware/authorization';
 
 /**
  * Express router for user-related routes.
@@ -28,6 +29,41 @@ router.post('/login', controller.login.bind(controller));
  * @access Private (requires authentication)
  */
 router.get('/me', authMiddleware, controller.getMe.bind(controller));
+
+/**
+ * @route GET /api/users/search
+ * @description Search for users by username or email.
+ * @access Private (requires admin role)
+ */
+router.get('/search', authMiddleware, checkBannedUser, requireAdmin, controller.search.bind(controller));
+
+/**
+ * @route GET /api/users/banned
+ * @description Get a list of all banned users.
+ * @access Private (requires admin role)
+ */
+router.get('/banned', authMiddleware, checkBannedUser, requireAdmin, controller.getBanned.bind(controller));
+
+/**
+ * @route POST /api/users/:id/ban
+ * @description Ban a user from the platform.
+ * @access Private (requires admin role)
+ */
+router.post('/:id/ban', authMiddleware, checkBannedUser, requireAdmin, controller.ban.bind(controller));
+
+/**
+ * @route POST /api/users/:id/unban
+ * @description Unban a user from the platform.
+ * @access Private (requires admin role)
+ */
+router.post('/:id/unban', authMiddleware, checkBannedUser, requireAdmin, controller.unban.bind(controller));
+
+/**
+ * @route PATCH /api/users/:id/role
+ * @description Change a user's role.
+ * @access Private (requires admin role)
+ */
+router.patch('/:id/role', authMiddleware, checkBannedUser, requireAdmin, controller.changeRole.bind(controller));
 
 /**
  * @route GET /api/users/:id

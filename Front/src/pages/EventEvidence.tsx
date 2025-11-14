@@ -17,6 +17,7 @@ export function EventEvidence() {
   const [counts, setCounts] = useState({ creator: 0, public: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [likingEvidence, setLikingEvidence] = useState<string | null>(null);
 
   // Form states
   const [showForm, setShowForm] = useState(false);
@@ -42,7 +43,9 @@ export function EventEvidence() {
       ]);
 
       setEvent(eventData);
-      setEvidences(evidenceData.evidence);
+      // Sort evidences by likes (descending)
+      const sortedEvidences = evidenceData.evidence.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+      setEvidences(sortedEvidences);
       setCounts(evidenceData.counts);
       if (eventData.resultOptions.length > 0) {
         setSupportedOption(eventData.resultOptions[0]);
@@ -136,6 +139,25 @@ export function EventEvidence() {
       setError(err.response?.data?.message || 'Error al subir evidencia');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleLike = async (evidenceId: string, isLiked: boolean) => {
+    if (!eventId || !user) return;
+
+    setLikingEvidence(evidenceId);
+    try {
+      if (isLiked) {
+        await evidenceService.unlikeEvidence(eventId, evidenceId);
+      } else {
+        await evidenceService.likeEvidence(eventId, evidenceId);
+      }
+      // Reload to get updated counts
+      await loadEventAndEvidence();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error al procesar like');
+    } finally {
+      setLikingEvidence(null);
     }
   };
 
@@ -331,34 +353,55 @@ export function EventEvidence() {
 
           {/* Evidence List */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Evidencias Subidas</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Evidencias Subidas</h2>
+              {evidences.length > 0 && (
+                <span className="text-sm text-gray-600">Ordenadas por más votadas</span>
+              )}
+            </div>
 
             {evidences.length === 0 ? (
               <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
                 No hay evidencias aún
               </div>
             ) : (
-              evidences.map((evidence) => (
-                <div key={evidence.id} className="bg-white rounded-lg shadow-md p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                          evidence.submitterRole === 'creator'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-purple-100 text-purple-800'
-                        }`}
-                      >
-                        {evidence.submitterRole === 'creator' ? 'Creador' : 'Público'}
-                      </span>
-                      <span className="ml-2 text-sm text-gray-600">
-                        por {evidence.submittedBy.username}
-                      </span>
+              evidences.map((evidence) => {
+                const isLiked = user && evidence.likes?.includes(user.id);
+                return (
+                  <div key={evidence.id} className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                            evidence.submitterRole === 'creator'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-purple-100 text-purple-800'
+                          }`}
+                        >
+                          {evidence.submitterRole === 'creator' ? 'Creador' : 'Público'}
+                        </span>
+                        <span className="ml-2 text-sm text-gray-600">
+                          por {evidence.submittedBy.username}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-500">
+                          {new Date(evidence.createdAt).toLocaleDateString()}
+                        </span>
+                        <button
+                          onClick={() => handleToggleLike(evidence.id, isLiked || false)}
+                          disabled={likingEvidence === evidence.id}
+                          className={`flex items-center gap-1 px-3 py-1 rounded-lg transition-colors ${
+                            isLiked
+                              ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          } ${likingEvidence === evidence.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <span className="text-lg">{isLiked ? '❤️' : '🤍'}</span>
+                          <span className="font-semibold">{evidence.likesCount || 0}</span>
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {new Date(evidence.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
 
                   <div className="mb-3">
                     <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
@@ -388,7 +431,8 @@ export function EventEvidence() {
                     </a>
                   )}
                 </div>
-              ))
+              );
+              })
             )}
           </div>
         </div>

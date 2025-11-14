@@ -3,6 +3,48 @@ import { UserModel } from '../modules/users/model';
 import type { AuthenticatedRequest } from './auth';
 
 /**
+ * Middleware to check if user is banned.
+ * Should be used after authMiddleware and before any authorization checks.
+ * Blocks banned users from accessing the platform.
+ *
+ * @example
+ * router.get('/protected', authMiddleware, checkBannedUser, handler);
+ */
+export const checkBannedUser = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.userId) {
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+
+    const user = await UserModel.findById(req.user.userId).exec();
+
+    if (!user) {
+      res.status(401).json({ message: 'User not found' });
+      return;
+    }
+
+    // Check if user is banned
+    if (user.isBanned) {
+      res.status(403).json({
+        message: 'Your account has been banned from the platform',
+        bannedAt: user.bannedAt,
+        reason: user.banReason || 'No reason provided',
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Middleware factory to require specific roles.
  * Validates that the authenticated user has one of the required roles.
  *

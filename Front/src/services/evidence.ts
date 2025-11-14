@@ -33,4 +33,20 @@ export const evidenceService = {
     const response = await api.get<{ evidence: Evidence }>(`/evidence/${evidenceId}`);
     return response.data.evidence;
   },
+
+  /**
+   * Like an evidence
+   */
+  async likeEvidence(eventId: string, evidenceId: string): Promise<{ message: string; likesCount: number }> {
+    const response = await api.post(`/events/${eventId}/evidence/${evidenceId}/like`);
+    return response.data;
+  },
+
+  /**
+   * Unlike an evidence
+   */
+  async unlikeEvidence(eventId: string, evidenceId: string): Promise<{ message: string; likesCount: number }> {
+    const response = await api.delete(`/events/${eventId}/evidence/${evidenceId}/like`);
+    return response.data;
+  },
 };

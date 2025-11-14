@@ -1,8 +1,17 @@
+export type UserRole = 'user' | 'curator' | 'admin';
+
+export type CuratorStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
 export interface User {
   id: string;
   username: string;
   email: string;
   balance?: number;
+  role?: UserRole;
+  curatorStatus?: CuratorStatus;
+  isBanned?: boolean;
+  bannedAt?: string;
+  banReason?: string;
 }
 
 export interface AuthResponse {
@@ -112,6 +121,8 @@ export interface Evidence {
   content?: string;
   description: string;
   supportedOption: string;
+  likes?: string[];
+  likesCount?: number;
   createdAt: string;
 }
 
@@ -127,4 +138,26 @@ export interface ResolveEventData {
   winningOption: string;
   evidenceId?: string;
   rationale?: string;
+}
+
+// Admin interfaces
+export interface BanUserData {
+  reason?: string;
+}
+
+export interface ChangeRoleData {
+  role: UserRole;
+}
+
+export interface UpdateEventDatesData {
+  bettingDeadline: Date;
+  expectedResolutionDate: Date;
+}
+
+export interface BannedUser extends User {
+  bannedBy?: {
+    id: string;
+    username: string;
+    email: string;
+  };
 }

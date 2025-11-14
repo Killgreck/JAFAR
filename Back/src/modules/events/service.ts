@@ -172,3 +172,170 @@ export async function resolveEvent(
 
   return event;
 }
+
+/**
+ * Updates the evidence submission phase for an event based on current time.
+ *
+ * @param event The event document to update
+ * @returns The updated event document
+ */
+export async function updateEvidencePhase(event: EventDocument): Promise<EventDocument> {
+  const now = new Date();
+  let newPhase: 'none' | 'creator' | 'public' = 'none';
+
+  // Determine the correct phase based on time
+  if (now < event.bettingDeadline) {
+    newPhase = 'none';
+  } else if (now >= event.bettingDeadline && now < event.evidenceDeadline!) {
+    newPhase = 'creator';
+  } else if (now >= event.evidenceDeadline!) {
+    newPhase = 'public';
+  }
+
+  // Update if phase has changed
+  if (event.evidenceSubmissionPhase !== newPhase) {
+    event.evidenceSubmissionPhase = newPhase;
+    await event.save();
+  }
+
+  return event;
+}
+
+/**
+ * Gets events that are ready for curation (closed status with evidence).
+ * These are events past the evidence deadline with public evidence submitted.
+ *
+ * @returns A promise that resolves to an array of events ready for curation
+ */
+export async function getEventsReadyForCuration(): Promise<EventDocument[]> {
+  const now = new Date();
+
+  // Events where:
+  // 1. Evidence deadline has passed
+  // 2. Status is 'closed' (betting finished but not resolved)
+  // 3. Has at least some evidence
+  const events = await EventModel.find({
+    evidenceDeadline: { $lt: now },
+    status: { $in: ['open', 'closed'] },
+  })
+    .populate('creator', 'username email')
+    .sort({ evidenceDeadline: 1 })
+    .exec();
+
+  // Update phases for all these events
+  for (const event of events) {
+    await updateEvidencePhase(event);
+    // Auto-close events that are still open
+    if (event.status === 'open' && now >= event.bettingDeadline) {
+      event.status = 'closed';
+      await event.save();
+    }
+  }
+
+  return events;
+}
+
+/**
+ * Cancels an event and refunds all wagers.
+ * This function:
+ * 1. Finds all wagers for the event
+ * 2. Returns the wagered amount to each user's wallet
+ * 3. Marks all wagers as settled with actualPayout = amount
+ * 4. Changes event status to 'cancelled'
+ *
+ * @param id The ID of the event to cancel
+ * @param adminId The ID of the admin performing the cancellation
+ * @returns A promise that resolves to the cancelled event or null if not found
+ * @throws {EventValidationError} If the event cannot be cancelled
+ */
+export async function cancelEventWithRefund(
+  id: string,
+  adminId: string
+): Promise<EventDocument | null> {
+  const event = await EventModel.findById(id).exec();
+
+  if (!event) {
+    return null;
+  }
+
+  // Check if event is already cancelled or resolved
+  if (event.status === 'cancelled') {
+    throw new EventValidationError('Event is already cancelled');
+  }
+
+  if (event.status === 'resolved') {
+    throw new EventValidationError('Cannot cancel a resolved event');
+  }
+
+  // Import models dynamically to avoid circular dependencies
+  const { EventWagerModel } = await import('../event-wagers/model');
+  const { WalletModel } = await import('../wallet/model');
+
+  // Find all wagers for this event
+  const wagers = await EventWagerModel.find({
+    event: id,
+    settled: false,
+  }).exec();
+
+  // Process refunds for each wager
+  for (const wager of wagers) {
+    // Return amount to user's wallet (balanceAvailable)
+    await WalletModel.findOneAndUpdate(
+      { user: wager.user },
+      {
+        $inc: { balanceAvailable: wager.amount },
+        $set: { lastUpdated: new Date() },
+      }
+    ).exec();
+
+    // Mark wager as settled with full refund
+    wager.settled = true;
+    wager.actualPayout = wager.amount;
+    wager.settledAt = new Date();
+    await wager.save();
+  }
+
+  // Update event status to cancelled
+  event.status = 'cancelled';
+  await event.save();
+
+  return event;
+}
+
+/**
+ * Updates the dates of an event.
+ * Only allows updating dates if the event is still open.
+ *
+ * @param id The ID of the event to update
+ * @param bettingDeadline The new betting deadline
+ * @param expectedResolutionDate The new expected resolution date
+ * @returns A promise that resolves to the updated event or null if not found
+ * @throws {EventValidationError} If validation fails or event cannot be updated
+ */
+export async function updateEventDates(
+  id: string,
+  bettingDeadline: Date,
+  expectedResolutionDate: Date
+): Promise<EventDocument | null> {
+  const event = await EventModel.findById(id).exec();
+
+  if (!event) {
+    return null;
+  }
+
+  // Only allow updating dates for open events
+  if (event.status !== 'open') {
+    throw new EventValidationError('Can only update dates for open events');
+  }
+
+  // Validate the new dates
+  validateEventDates(bettingDeadline, expectedResolutionDate);
+
+  // Update the dates
+  event.bettingDeadline = bettingDeadline;
+  event.expectedResolutionDate = expectedResolutionDate;
+
+  await event.save();
+
+  return event;
+}
