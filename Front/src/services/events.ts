@@ -1,5 +1,5 @@
 import api from './api';
-import type { Event, CreateEventData, ResolveEventData } from '../types';
+import type { Event, CreateEventData, ResolveEventData, EventSearchParams, EventSearchResult } from '../types';
 
 export const eventsService = {
   async list(filters?: { category?: string; status?: string; creator?: string }): Promise<Event[]> {
@@ -32,6 +32,25 @@ export const eventsService = {
 
   async resolve(id: string, data: ResolveEventData): Promise<Event> {
     const response = await api.post<Event>(`/events/${id}/resolve`, data);
+    return response.data;
+  },
+
+  async search(params: EventSearchParams = {}): Promise<EventSearchResult> {
+    const urlParams = new URLSearchParams();
+
+    if (params.q) urlParams.append('q', params.q);
+    if (params.category) urlParams.append('category', params.category);
+    if (params.status) urlParams.append('status', params.status);
+    if (params.dateFrom) urlParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) urlParams.append('dateTo', params.dateTo);
+    if (params.sortBy) urlParams.append('sortBy', params.sortBy);
+    if (params.page !== undefined) urlParams.append('page', params.page.toString());
+    if (params.limit !== undefined) urlParams.append('limit', params.limit.toString());
+
+    const queryString = urlParams.toString();
+    const url = queryString ? `/events/search?${queryString}` : '/events/search';
+
+    const response = await api.get<EventSearchResult>(url);
     return response.data;
   },
 };

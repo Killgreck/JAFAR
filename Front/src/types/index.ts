@@ -87,6 +87,7 @@ export interface Event {
   expectedResolutionDate: string;
   resultOptions: string[];
   status: EventStatus;
+  totalBets?: number;
   winningOption?: string;
   resolvedAt?: string;
   resolvedBy?: string;
@@ -181,4 +182,29 @@ export interface UserProfile {
 export interface UpdateProfileData {
   username?: string;
   avatar?: string;
+}
+
+// Event search and pagination interfaces
+export interface EventSearchParams {
+  q?: string;
+  category?: EventCategory;
+  status?: EventStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: 'recent' | 'closing_soon' | 'most_bets';
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+  limit: number;
+}
+
+export interface EventSearchResult {
+  events: Event[];
+  pagination: PaginationInfo;
 }
