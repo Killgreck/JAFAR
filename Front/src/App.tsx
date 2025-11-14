@@ -16,6 +16,7 @@ import { AdminUsers } from './pages/AdminUsers';
 import { AdminEvents } from './pages/AdminEvents';
 import { CuratorPanel } from './pages/CuratorPanel';
 import { Profile } from './pages/Profile';
+import TransactionHistory from './pages/TransactionHistory';
 
 function App() {
   return (
@@ -38,6 +39,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/transactions"
+            element={
+              <ProtectedRoute>
+                <TransactionHistory />
               </ProtectedRoute>
             }
           />
