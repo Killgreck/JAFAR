@@ -184,6 +184,15 @@ const eventSchema = new mongoose.Schema(
       required: false,
       default: 0,
     },
+    /**
+     * Total number of bets/wagers placed on this event.
+     */
+    totalBets: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
@@ -225,12 +234,19 @@ eventSchema.pre('save', function(next) {
 });
 
 /**
- * Index for faster queries by creator, category, and status.
+ * Indexes for faster queries.
  */
 eventSchema.index({ creator: 1 });
 eventSchema.index({ category: 1 });
 eventSchema.index({ status: 1 });
 eventSchema.index({ bettingDeadline: 1 });
+eventSchema.index({ totalBets: -1 }); // For sorting by most bet on
+eventSchema.index({ createdAt: -1 }); // For sorting by most recent
+
+/**
+ * Full-text search index for title and description.
+ */
+eventSchema.index({ title: 'text', description: 'text' });
 
 /**
  * Text index for searching by title and description.

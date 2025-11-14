@@ -50,6 +50,15 @@ export interface ListEventsParams {
   dateFrom?: string;
   dateTo?: string;
   sortBy?: SortOption;
+ * Interface for searching and filtering events with pagination.
+ */
+export interface SearchEventsOptions {
+  searchText?: string;
+  category?: EventCategory;
+  status?: EventStatus;
+  dateFrom?: Date;
+  dateTo?: Date;
+  sortBy?: 'recent' | 'closing_soon' | 'most_bets';
   page?: number;
   limit?: number;
 }
@@ -72,6 +81,14 @@ export interface PaginationMeta {
 export interface PaginatedEventsResponse {
   events: any[];
   pagination: PaginationMeta;
+ * Interface for search results with pagination info.
+ */
+export interface SearchEventsResult {
+  events: EventDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
 }
 
 /**
@@ -285,6 +302,100 @@ export async function listEventsPaginated(params: ListEventsParams = {}): Promis
       hasNext,
       hasPrev,
     },
+ * Searches and filters events with pagination and sorting.
+ *
+ * @param options Search and filter options
+ * @returns A promise that resolves to search results with pagination info
+ */
+export async function searchEvents(options: SearchEventsOptions = {}): Promise<SearchEventsResult> {
+  const {
+    searchText,
+    category,
+    status,
+    dateFrom,
+    dateTo,
+    sortBy = 'recent',
+    page = 1,
+    limit = 20,
+  } = options;
+
+  // Build query
+  const query: any = {};
+
+  // Text search (full-text search on title and description)
+  if (searchText && searchText.trim().length > 0) {
+    query.$text = { $search: searchText.trim() };
+  }
+
+  // Category filter
+  if (category) {
+    query.category = category;
+  }
+
+  // Status filter
+  if (status) {
+    query.status = status;
+  }
+
+  // Date range filter (bettingDeadline)
+  if (dateFrom || dateTo) {
+    query.bettingDeadline = {};
+    if (dateFrom) {
+      query.bettingDeadline.$gte = dateFrom;
+    }
+    if (dateTo) {
+      query.bettingDeadline.$lte = dateTo;
+    }
+  }
+
+  // Build sort options
+  let sortOptions: any = {};
+  switch (sortBy) {
+    case 'closing_soon':
+      // Events closing soon (earliest bettingDeadline first, only open events)
+      if (!query.status) {
+        query.status = 'open';
+      }
+      sortOptions = { bettingDeadline: 1 };
+      break;
+    case 'most_bets':
+      // Most bet on events (highest totalBets first)
+      sortOptions = { totalBets: -1, createdAt: -1 };
+      break;
+    case 'recent':
+    default:
+      // Most recent events
+      sortOptions = { createdAt: -1 };
+      break;
+  }
+
+  // If text search is active, include text score in sort
+  if (searchText && searchText.trim().length > 0) {
+    sortOptions = { score: { $meta: 'textScore' }, ...sortOptions };
+  }
+
+  // Calculate pagination
+  const skip = (page - 1) * limit;
+
+  // Execute query with pagination
+  const [events, total] = await Promise.all([
+    EventModel.find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .exec(),
+    EventModel.countDocuments(query).exec(),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+  const hasMore = page < totalPages;
+
+  return {
+    events,
+    total,
+    page,
+    totalPages,
+    hasMore,
   };
 }
 

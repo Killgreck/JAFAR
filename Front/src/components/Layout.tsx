@@ -47,6 +47,18 @@ export function Layout({ children }: LayoutProps) {
                   >
                     Eventos
                   </button>
+                  <button
+                    onClick={() => navigate('/profile')}
+                    className="text-gray-300 hover:text-white transition-colors"
+                  >
+                    Perfil
+                  </button>
+                  <button
+                    onClick={() => navigate('/transactions')}
+                    className="text-gray-300 hover:text-white transition-colors"
+                  >
+                    Transacciones
+                  </button>
                   {(user.role === 'curator' || user.role === 'admin') && user.curatorStatus === 'approved' && (
                     <button
                       onClick={() => navigate('/curator/panel')}

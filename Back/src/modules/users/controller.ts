@@ -10,6 +10,9 @@ import {
   changeUserRole,
   searchUsers,
   getBannedUsers,
+  getUserProfile,
+  updateUserProfile,
+  isUsernameAvailable,
 } from './service';
 import type { UserDocument } from './model';
 
@@ -22,6 +25,7 @@ type SanitizedUser = {
   balance: number;
   createdAt?: Date;
   updatedAt?: Date;
+  avatar?: string | null;
 };
 
 /**
@@ -37,6 +41,7 @@ function sanitizeUser(user: UserDocument): SanitizedUser {
     balance: user.balance ?? 25,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    avatar: user.avatar,
   };
 }
 
@@ -141,6 +146,13 @@ export class UsersController {
         return;
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({ message: 'email must be a valid email address' });
+        return;
+      }
+
       if (password.length < 8) {
         res.status(400).json({ message: 'password must be at least 8 characters long' });
         return;
@@ -181,17 +193,30 @@ export class UsersController {
         return;
       }
 
-      const result = await loginUser(email, password);
+      try {
+        const result = await loginUser(email, password);
 
-      if (!result) {
-        res.status(401).json({ message: 'Invalid email or password' });
-        return;
+        if (!result) {
+          res.status(401).json({ message: 'Invalid email or password' });
+          return;
+        }
+
+        res.json({
+          token: result.token,
+          user: sanitizeUser(result.user),
+        });
+      } catch (loginError: any) {
+        // Check if it's an account lock error
+        if (loginError.message && loginError.message.includes('locked')) {
+          res.status(429).json({
+            message: loginError.message,
+            error: 'ACCOUNT_LOCKED'
+          });
+          return;
+        }
+        // Re-throw other errors
+        throw loginError;
       }
-
-      res.json({
-        token: result.token,
-        user: sanitizeUser(result.user),
-      });
     } catch (error) {
       next(error);
     }
@@ -385,6 +410,102 @@ export class UsersController {
         count: users.length,
       });
     } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Gets the authenticated user's profile with statistics.
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   */
+  async getProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ message: 'Authentication required' });
+        return;
+      }
+
+      const profileData = await getUserProfile(userId);
+
+      if (!profileData) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+
+      res.json({
+        profile: {
+          id: profileData.user._id.toString(),
+          email: profileData.user.email,
+          username: profileData.user.username,
+          balance: profileData.user.balance,
+          avatar: profileData.user.avatar,
+          role: profileData.user.role,
+          createdAt: profileData.user.createdAt,
+          updatedAt: profileData.user.updatedAt,
+        },
+        statistics: profileData.statistics,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Updates the authenticated user's profile.
+   * @param req The request object.
+   * @param res The response object.
+   * @param next The next middleware function.
+   */
+  async updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.userId;
+      const { username, avatar } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ message: 'Authentication required' });
+        return;
+      }
+
+      // Validate that at least one field is being updated
+      if (username === undefined && avatar === undefined) {
+        res.status(400).json({ message: 'At least one field (username or avatar) must be provided' });
+        return;
+      }
+
+      // If username is being updated, check if it's available
+      if (username !== undefined) {
+        if (!username || username.trim().length === 0) {
+          res.status(400).json({ message: 'Username cannot be empty' });
+          return;
+        }
+
+        const isAvailable = await isUsernameAvailable(username, userId);
+        if (!isAvailable) {
+          res.status(409).json({ message: 'Username is already taken' });
+          return;
+        }
+      }
+
+      const updatedUser = await updateUserProfile(userId, { username, avatar });
+
+      if (!updatedUser) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+
+      res.json({
+        message: 'Profile updated successfully',
+        user: sanitizeUser(updatedUser),
+      });
+    } catch (error) {
+      if (isDuplicateKeyError(error)) {
+        res.status(409).json({ message: 'Username is already taken' });
+        return;
+      }
       next(error);
     }
   }

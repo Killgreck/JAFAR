@@ -5,6 +5,7 @@ import {
   getEventById,
   listEvents,
   listEventsPaginated,
+  searchEvents,
   updateEventStatus,
   resolveEvent,
   cancelEventWithRefund,
@@ -33,9 +34,18 @@ function sanitizeEvent(event: EventDocument) {
     expectedResolutionDate: event.expectedResolutionDate,
     resultOptions: event.resultOptions,
     status: event.status,
+    totalBets: event.totalBets ?? 0,
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
   };
+
+  if (event.evidenceDeadline) {
+    sanitized.evidenceDeadline = event.evidenceDeadline;
+  }
+
+  if (event.evidenceSubmissionPhase) {
+    sanitized.evidenceSubmissionPhase = event.evidenceSubmissionPhase;
+  }
 
   if (event.winningOption) {
     sanitized.winningOption = event.winningOption;
@@ -43,6 +53,18 @@ function sanitizeEvent(event: EventDocument) {
 
   if (event.resolvedAt) {
     sanitized.resolvedAt = event.resolvedAt;
+  }
+
+  if (event.resolvedBy) {
+    sanitized.resolvedBy = event.resolvedBy;
+  }
+
+  if (event.resolutionRationale) {
+    sanitized.resolutionRationale = event.resolutionRationale;
+  }
+
+  if (event.curatorCommission) {
+    sanitized.curatorCommission = event.curatorCommission;
   }
 
   return sanitized;
@@ -282,6 +304,111 @@ export class EventController {
       res.json({
         events: sanitizedEvents,
         pagination: result.pagination,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Searches and filters events with pagination.
+   * New endpoint with full search capabilities.
+   *
+   * @param req The request object
+   * @param res The response object
+   * @param next The next middleware function
+   */
+  async search(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const {
+        q,
+        search,
+        category,
+        status,
+        dateFrom,
+        dateTo,
+        sortBy,
+        page,
+        limit,
+      } = req.query;
+
+      // Accept both 'q' and 'search' for search text
+      const searchText = (q || search) as string | undefined;
+
+      // Validate category
+      if (category && typeof category === 'string') {
+        if (!VALID_CATEGORIES.includes(category as EventCategory)) {
+          res.status(400).json({
+            message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`,
+          });
+          return;
+        }
+      }
+
+      // Validate sortBy
+      const validSortOptions = ['recent', 'closing_soon', 'most_bets'];
+      if (sortBy && typeof sortBy === 'string' && !validSortOptions.includes(sortBy)) {
+        res.status(400).json({
+          message: `Invalid sortBy. Must be one of: ${validSortOptions.join(', ')}`,
+        });
+        return;
+      }
+
+      // Parse dates
+      let dateFromParsed: Date | undefined;
+      let dateToParsed: Date | undefined;
+
+      if (dateFrom && typeof dateFrom === 'string') {
+        dateFromParsed = new Date(dateFrom);
+        if (isNaN(dateFromParsed.getTime())) {
+          res.status(400).json({ message: 'Invalid dateFrom format' });
+          return;
+        }
+      }
+
+      if (dateTo && typeof dateTo === 'string') {
+        dateToParsed = new Date(dateTo);
+        if (isNaN(dateToParsed.getTime())) {
+          res.status(400).json({ message: 'Invalid dateTo format' });
+          return;
+        }
+      }
+
+      // Parse pagination
+      const pageNum = page ? parseInt(page as string, 10) : 1;
+      const limitNum = limit ? parseInt(limit as string, 10) : 20;
+
+      if (isNaN(pageNum) || pageNum < 1) {
+        res.status(400).json({ message: 'Invalid page number' });
+        return;
+      }
+
+      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+        res.status(400).json({ message: 'Invalid limit (must be between 1 and 100)' });
+        return;
+      }
+
+      // Search events
+      const result = await searchEvents({
+        searchText,
+        category: category as EventCategory | undefined,
+        status: status as EventStatus | undefined,
+        dateFrom: dateFromParsed,
+        dateTo: dateToParsed,
+        sortBy: sortBy as 'recent' | 'closing_soon' | 'most_bets' | undefined,
+        page: pageNum,
+        limit: limitNum,
+      });
+
+      res.json({
+        events: result.events.map(sanitizeEvent),
+        pagination: {
+          total: result.total,
+          page: result.page,
+          totalPages: result.totalPages,
+          hasMore: result.hasMore,
+          limit: limitNum,
+        },
       });
     } catch (error) {
       next(error);

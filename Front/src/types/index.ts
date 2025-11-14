@@ -12,6 +12,9 @@ export interface User {
   isBanned?: boolean;
   bannedAt?: string;
   banReason?: string;
+  avatar?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -84,6 +87,7 @@ export interface Event {
   expectedResolutionDate: string;
   resultOptions: string[];
   status: EventStatus;
+  totalBets?: number;
   winningOption?: string;
   resolvedAt?: string;
   resolvedBy?: string;
@@ -176,4 +180,86 @@ export interface PaginationMeta {
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: PaginationMeta;
+export interface UserStatistics {
+  totalBets: number;
+  wonBets: number;
+  lostBets: number;
+  activeBets: number;
+  successRate: number;
+}
+
+export interface UserProfile {
+  profile: User;
+  statistics: UserStatistics;
+}
+
+export interface UpdateProfileData {
+  username?: string;
+  avatar?: string;
+}
+
+// Event search and pagination interfaces
+export interface EventSearchParams {
+  q?: string;
+  category?: EventCategory;
+  status?: EventStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: 'recent' | 'closing_soon' | 'most_bets';
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+  limit: number;
+}
+
+export interface EventSearchResult {
+  events: Event[];
+  pagination: PaginationInfo;
+}
+
+// Transaction interfaces
+export type TransactionType = 'deposit' | 'withdraw' | 'block' | 'release' | 'win' | 'loss' | 'commission';
+
+export interface Transaction {
+  id: string;
+  user: string;
+  wallet: string;
+  type: TransactionType;
+  amount: number;
+  balanceAfter: number;
+  blockedBalanceAfter?: number;
+  description: string;
+  relatedEvent?: {
+    id: string;
+    title: string;
+  };
+  relatedWager?: {
+    id: string;
+  };
+  relatedBet?: {
+    id: string;
+    question: string;
+  };
+  metadata?: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionFilters {
+  type?: TransactionType;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface TransactionSearchResult {
+  transactions: Transaction[];
+  pagination: PaginationInfo;
 }
