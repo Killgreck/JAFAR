@@ -121,6 +121,8 @@ export interface Evidence {
   content?: string;
   description: string;
   supportedOption: string;
+  likes?: string[];
+  likesCount?: number;
   createdAt: string;
 }
 
