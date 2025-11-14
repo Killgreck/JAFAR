@@ -35,6 +35,21 @@ export interface EventFilters {
 }
 
 /**
+ * Sort options for listing events.
+ */
+export type SortOption = 'recent' | 'closingSoon' | 'mostBetted';
+
+/**
+ * Interface for listing events with advanced filters, search, sorting, and pagination.
+ */
+export interface ListEventsParams {
+  search?: string;
+  category?: EventCategory;
+  status?: EventStatus;
+  creator?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: SortOption;
  * Interface for searching and filtering events with pagination.
  */
 export interface SearchEventsOptions {
@@ -49,6 +64,23 @@ export interface SearchEventsOptions {
 }
 
 /**
+ * Pagination metadata for paginated responses.
+ */
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+/**
+ * Paginated response for listing events.
+ */
+export interface PaginatedEventsResponse {
+  events: any[];
+  pagination: PaginationMeta;
  * Interface for search results with pagination info.
  */
 export interface SearchEventsResult {
@@ -150,6 +182,126 @@ export async function listEvents(filters?: EventFilters): Promise<EventDocument[
 }
 
 /**
+ * Retrieves a paginated list of events with advanced filters, search, and sorting.
+ *
+ * @param params Search, filter, sort, and pagination parameters
+ * @returns A promise that resolves to paginated events with metadata
+ */
+export async function listEventsPaginated(params: ListEventsParams = {}): Promise<PaginatedEventsResponse> {
+  const query: any = {};
+
+  // Text search in title and description
+  if (params.search && params.search.trim()) {
+    query.$or = [
+      { title: { $regex: params.search.trim(), $options: 'i' } },
+      { description: { $regex: params.search.trim(), $options: 'i' } },
+    ];
+  }
+
+  // Category filter
+  if (params.category) {
+    query.category = params.category;
+  }
+
+  // Status filter
+  if (params.status) {
+    query.status = params.status;
+  }
+
+  // Creator filter
+  if (params.creator) {
+    query.creator = params.creator;
+  }
+
+  // Date range filter (betting deadline)
+  if (params.dateFrom || params.dateTo) {
+    query.bettingDeadline = {};
+    if (params.dateFrom) {
+      query.bettingDeadline.$gte = new Date(params.dateFrom);
+    }
+    if (params.dateTo) {
+      query.bettingDeadline.$lte = new Date(params.dateTo);
+    }
+  }
+
+  // Pagination
+  const page = params.page || 1;
+  const limit = params.limit || 20;
+  const skip = (page - 1) * limit;
+
+  // Sort criteria
+  const sortBy = params.sortBy || 'recent';
+  let sortStage: any;
+
+  switch (sortBy) {
+    case 'closingSoon':
+      sortStage = { bettingDeadline: 1 }; // Ascending - closest deadline first
+      break;
+    case 'mostBetted':
+      sortStage = { totalAmount: -1 }; // Descending - highest amount first
+      break;
+    case 'recent':
+    default:
+      sortStage = { createdAt: -1 }; // Descending - newest first
+      break;
+  }
+
+  // Get total count for pagination metadata
+  const total = await EventModel.countDocuments(query).exec();
+
+  // Build aggregation pipeline
+  const pipeline: any[] = [
+    // Match query filters
+    { $match: query },
+    // Lookup wagers for each event to calculate totalAmount
+    {
+      $lookup: {
+        from: 'eventwagers',
+        localField: '_id',
+        foreignField: 'event',
+        as: 'wagers',
+      },
+    },
+    // Calculate totalAmount from wagers
+    {
+      $addFields: {
+        totalAmount: {
+          $sum: '$wagers.amount',
+        },
+      },
+    },
+    // Remove wagers array (we only need totalAmount)
+    {
+      $project: {
+        wagers: 0,
+      },
+    },
+    // Sort
+    { $sort: sortStage },
+    // Skip for pagination
+    { $skip: skip },
+    // Limit for pagination
+    { $limit: limit },
+  ];
+
+  // Execute aggregation
+  const events = await EventModel.aggregate(pipeline).exec();
+
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(total / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    events,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNext,
+      hasPrev,
+    },
  * Searches and filters events with pagination and sorting.
  *
  * @param options Search and filter options

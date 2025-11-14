@@ -4,6 +4,7 @@ import {
   createEvent,
   getEventById,
   listEvents,
+  listEventsPaginated,
   searchEvents,
   updateEventStatus,
   resolveEvent,
@@ -204,14 +205,21 @@ export class EventController {
    */
   async list(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { category, status, creator } = req.query;
+      const {
+        search,
+        category,
+        status,
+        creator,
+        dateFrom,
+        dateTo,
+        sortBy,
+        page,
+        limit
+      } = req.query;
 
-      const filters: any = {};
-
+      // Validate category if provided
       if (category && typeof category === 'string') {
-        if (VALID_CATEGORIES.includes(category as EventCategory)) {
-          filters.category = category;
-        } else {
+        if (!VALID_CATEGORIES.includes(category as EventCategory)) {
           res.status(400).json({
             message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`,
           });
@@ -219,21 +227,84 @@ export class EventController {
         }
       }
 
-      if (status && typeof status === 'string') {
-        filters.status = status as EventStatus;
-      }
-
+      // Validate creator ID if provided
       if (creator && typeof creator === 'string') {
         if (!isValidObjectId(creator)) {
           res.status(400).json({ message: 'Invalid creator ID' });
           return;
         }
-        filters.creator = creator;
       }
 
-      const events = await listEvents(filters);
+      // Build params object
+      const params: any = {};
 
-      res.json(events.map(sanitizeEvent));
+      if (search && typeof search === 'string') {
+        params.search = search;
+      }
+
+      if (category && typeof category === 'string') {
+        params.category = category as EventCategory;
+      }
+
+      if (status && typeof status === 'string') {
+        params.status = status as EventStatus;
+      }
+
+      if (creator && typeof creator === 'string') {
+        params.creator = creator;
+      }
+
+      if (dateFrom && typeof dateFrom === 'string') {
+        params.dateFrom = dateFrom;
+      }
+
+      if (dateTo && typeof dateTo === 'string') {
+        params.dateTo = dateTo;
+      }
+
+      if (sortBy && typeof sortBy === 'string') {
+        params.sortBy = sortBy;
+      }
+
+      if (page && typeof page === 'string') {
+        params.page = parseInt(page, 10) || 1;
+      }
+
+      if (limit && typeof limit === 'string') {
+        params.limit = parseInt(limit, 10) || 20;
+      }
+
+      // Use the new paginated function
+      const result = await listEventsPaginated(params);
+
+      // Sanitize events in the response
+      const sanitizedEvents = result.events.map((event: any) => ({
+        id: event._id.toString(),
+        creator: event.creator.toString(),
+        title: event.title,
+        description: event.description,
+        category: event.category,
+        bettingDeadline: event.bettingDeadline,
+        evidenceDeadline: event.evidenceDeadline,
+        evidenceSubmissionPhase: event.evidenceSubmissionPhase,
+        expectedResolutionDate: event.expectedResolutionDate,
+        resultOptions: event.resultOptions,
+        status: event.status,
+        winningOption: event.winningOption,
+        resolvedAt: event.resolvedAt,
+        resolvedBy: event.resolvedBy,
+        resolutionRationale: event.resolutionRationale,
+        evidenceUsed: event.evidenceUsed,
+        curatorCommission: event.curatorCommission,
+        totalAmount: event.totalAmount || 0,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+      }));
+
+      res.json({
+        events: sanitizedEvents,
+        pagination: result.pagination,
+      });
     } catch (error) {
       next(error);
     }
