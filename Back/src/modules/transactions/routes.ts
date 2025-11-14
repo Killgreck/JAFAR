@@ -10,6 +10,13 @@ const router = Router();
 const controller = new TransactionController();
 
 /**
+ * @route GET /api/wallet/:userId/transactions/stats
+ * @description Get transaction statistics for a user
+ * @access Private (requires authentication, user can only view own stats unless admin)
+ */
+router.get('/:userId/transactions/stats', authMiddleware, checkBannedUser, controller.getStats.bind(controller));
+
+/**
  * @route GET /api/wallet/:userId/transactions
  * @description Get transaction history for a user with pagination and filters
  * @query type - Filter by transaction type (optional)
@@ -22,20 +29,7 @@ const controller = new TransactionController();
 router.get('/:userId/transactions', authMiddleware, checkBannedUser, controller.getUserTransactions.bind(controller));
 
 /**
- * @route GET /api/wallet/:userId/transactions/stats
- * @description Get transaction statistics for a user
- * @access Private (requires authentication, user can only view own stats unless admin)
- */
-router.get('/:userId/transactions/stats', authMiddleware, checkBannedUser, controller.getStats.bind(controller));
-
-/**
- * @route GET /api/transactions/:id
- * @description Get a specific transaction by ID
- * @access Private (requires authentication, user can only view own transactions unless admin)
- */
-router.get('/transactions/:id', authMiddleware, checkBannedUser, controller.getById.bind(controller));
-
-/**
  * Express router for transaction-related API endpoints.
+ * Mounted under /api/wallet
  */
 export const transactionsRouter = router;
