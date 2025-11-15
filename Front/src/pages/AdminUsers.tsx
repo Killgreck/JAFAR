@@ -9,7 +9,6 @@ export function AdminUsers() {
   const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showBanned, setShowBanned] = useState(false);
 
   const handleSearch = async () => {
@@ -46,72 +45,6 @@ export function AdminUsers() {
     }
   };
 
-  const handleBanUser = async (userId: string, username: string) => {
-    const reason = prompt(`Ingresa la razón para banear a ${username}:`);
-    if (reason === null) return;
-
-    try {
-      setLoading(true);
-      setError('');
-      await adminService.banUser(userId, { reason: reason || undefined });
-      setSuccess(`Usuario ${username} baneado exitosamente`);
-      // Refresh results
-      if (showBanned) {
-        await loadBannedUsers();
-      } else if (searchQuery) {
-        await handleSearch();
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al banear usuario');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUnbanUser = async (userId: string, username: string) => {
-    if (!confirm(`¿Estás seguro de desbanear a ${username}?`)) return;
-
-    try {
-      setLoading(true);
-      setError('');
-      await adminService.unbanUser(userId);
-      setSuccess(`Usuario ${username} desbaneado exitosamente`);
-      await loadBannedUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al desbanear usuario');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChangeRole = async (userId: string, username: string, currentRole: string) => {
-    const newRole = prompt(
-      `Cambiar rol de ${username} (actual: ${currentRole})\nIngresa nuevo rol (user/curator/admin):`
-    );
-
-    if (!newRole || !['user', 'curator', 'admin'].includes(newRole)) {
-      if (newRole !== null) setError('Rol inválido. Usa: user, curator o admin');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError('');
-      await adminService.changeUserRole(userId, { role: newRole as UserRole });
-      setSuccess(`Rol de ${username} cambiado a ${newRole} exitosamente`);
-      // Refresh results
-      if (showBanned) {
-        await loadBannedUsers();
-      } else if (searchQuery) {
-        await handleSearch();
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al cambiar rol de usuario');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getRoleBadge = (role?: string) => {
     const styles = {
       admin: 'bg-red-900 text-red-200 border-red-700',
@@ -132,6 +65,12 @@ export function AdminUsers() {
     <Layout>
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-100">Gestión de Usuarios</h1>
+
+        <div className="bg-blue-900/20 border border-blue-700 text-blue-200 px-4 py-3 rounded-lg">
+          <p className="text-sm">
+            Como administrador, puedes ver la lista completa de usuarios y su información. Para gestionar permisos o realizar acciones sobre usuarios, contacta con el administrador del sistema.
+          </p>
+        </div>
 
         {/* Search and Actions */}
         <div className="card">
@@ -159,15 +98,6 @@ export function AdminUsers() {
           </div>
         )}
 
-        {success && (
-          <div className="bg-green-900 border border-green-700 text-green-200 px-4 py-3 rounded-lg">
-            {success}
-            <button onClick={() => setSuccess('')} className="ml-4 text-green-100 hover:text-white">
-              ✕
-            </button>
-          </div>
-        )}
-
         {loading && (
           <div className="text-center py-12 text-gray-400">Cargando...</div>
         )}
@@ -185,8 +115,8 @@ export function AdminUsers() {
             </h2>
             {users.map((user) => (
               <div key={user.id} className="card">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
+                <div>
+                  <div>
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-lg font-bold text-gray-100">{user.username}</h3>
                       {getRoleBadge(user.role)}
@@ -211,33 +141,6 @@ export function AdminUsers() {
                         )}
                       </div>
                     )}
-                  </div>
-
-                  <div className="flex flex-col gap-2 ml-4">
-                    {user.isBanned ? (
-                      <button
-                        onClick={() => handleUnbanUser(user.id, user.username)}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium"
-                        disabled={loading}
-                      >
-                        Desbanear
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleBanUser(user.id, user.username)}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium"
-                        disabled={loading}
-                      >
-                        Banear
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleChangeRole(user.id, user.username, user.role || 'user')}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium"
-                      disabled={loading}
-                    >
-                      Cambiar Rol
-                    </button>
                   </div>
                 </div>
               </div>
