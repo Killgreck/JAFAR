@@ -57,6 +57,7 @@ Back/*.key
 dist/
 build/
 *.tsbuildinfo
+Docs/Guion.md
 
 # Test outputs
 *-output.txt
