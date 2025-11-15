@@ -48,6 +48,12 @@ export function CuratorPanel() {
   };
 
   const handleResolve = async (event: Event) => {
+    // Verificar que el evento no esté resuelto o cancelado
+    if (event.status === 'resolved' || event.status === 'cancelled') {
+      setError('Este evento ya ha sido resuelto o cancelado.');
+      return;
+    }
+
     const winningOption = prompt(
       `Resolver evento: "${event.title}"\n\nOpciones disponibles:\n${event.resultOptions.join('\n')}\n\nIngresa la opción ganadora:`
     );
@@ -114,6 +120,12 @@ export function CuratorPanel() {
           </button>
         </div>
 
+        <div className="bg-purple-900/20 border border-purple-700 text-purple-200 px-4 py-3 rounded-lg">
+          <p className="text-sm">
+            Como curador, solo puedes ver y resolver eventos que no han sido resueltos. Los eventos resueltos o cancelados no aparecen en esta lista.
+          </p>
+        </div>
+
         {error && (
           <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg">
             {error}
@@ -157,6 +169,9 @@ export function CuratorPanel() {
                     <div className="flex items-center gap-2 mb-2">
                       <span className="px-2 py-1 bg-purple-900 text-purple-200 text-xs rounded border border-purple-700">
                         {event.category}
+                      </span>
+                      <span className="px-2 py-1 bg-yellow-900 text-yellow-200 text-xs rounded border border-yellow-700">
+                        {event.status === 'open' ? 'Abierto' : event.status === 'closed' ? 'Cerrado' : 'Pendiente'}
                       </span>
                     </div>
                   </div>
